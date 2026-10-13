@@ -2,6 +2,7 @@
 venv/
 .venv/
 env/
+entornoVirtual/
 
 # Variables de entorno (secretos, nunca se sube)
 .env
