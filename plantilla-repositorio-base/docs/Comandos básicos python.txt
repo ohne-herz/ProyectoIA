@@ -153,10 +153,6 @@ deactivate
 https://aistudio.google.com/api-keys
 
 Crear API KEY
-ApiKey		: AQ.Ab8RN6Iz9VOncsUif1j4rdw00l0pu-7uaoOCkVKkd1XPVuTtCw
-Nombre		: API Key Proyecto IA
-Nombre Proyecto	: projects/788433673029
-Numero Proyecto	: 788433673029
 
 CURL: curl "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent" \
   -H 'Content-Type: application/json' \
