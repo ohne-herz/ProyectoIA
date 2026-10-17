@@ -19,7 +19,7 @@ else:
 finally:
     # Código que se ejecuta siempre, haya o no excepción
 '''
-x=10
+'''x=10
 y=0
 try: 
     resultado = x/y
@@ -57,3 +57,30 @@ try:
     print (estudiante["email"])
 except KeyError: # error de clave inexistente
     print("Email no encontrado")
+'''
+def dividir():
+    try:
+        num1 = int(input("Ingrese el primer número: "))
+        num2 = int(input("Ingrese el segundo número: "))
+        resultado = num1 / num2
+        print(f"El resultado de la división es: {resultado}")
+    except ValueError:
+            print("La calculadora solo permite numeros enteros")    
+    except ZeroDivisionError:
+        print("La calculadora no puede dividirte entre cero.")
+    except Exception as error:
+        print(f"Ocurrió un error inesperado: {error}")
+    finally:
+        print("Gracias por usar la calculadora.")
+#dividir()
+
+
+try:
+     bebidas = ["coca cola", "agua saborizada", "chocolate caliente"]
+     bebida_deseada = input("Ingrese la bebida que quieres: ")
+     if(bebida_deseada not in bebidas):
+         raise ValueError("La bebida que ingresaste no está disponible.")
+     else:
+         print(f"Tu bebida {bebida_deseada} está lista!")
+except ValueError as error:
+    print(f"Error: {error}")    
