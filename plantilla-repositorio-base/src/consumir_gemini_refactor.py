@@ -12,6 +12,9 @@ API_KEY = os.getenv("GEMINI-API-KEY")  # Obtiene la clave de la variable de ento
 
 #Funcion para crear la solicitud
 def armar_peticion(pregunta):
+    if pregunta == "": # if not pregunta --- if pregunta empty
+        raise ValueError("La pregunta no puede estar vacía")
+    
     url = f"{URL_BASE}{MODELO}:generateContent?key={API_KEY}"
     body = {
      	"contents": [
@@ -28,17 +31,34 @@ def armar_peticion(pregunta):
 
 #Funcion para enviar la peticion
 def enviar_peticion(url, body):
-    respuesta = requests.post(url, json=body)
-    return respuesta.json()
-        
+    try:
+        respuesta = requests.post(url, json=body, timeout=30)  # Se establece un tiempo de espera de 30 segundos
+    except requests.excepcions.ConnectionError:
+        raise RuntimeError("No se pudo conectar con el servicio")
+    except requests.exceptions.Timeout:
+        raise RuntimeError("La solicitud ha excedido el tiempo de espera")
+
+    if respuesta.status_code != 200:
+        raise RuntimeError(f"Error en la petición. Status Code: {respuesta.status_code}")
+    
+    try:
+        return respuesta.json()
+    except requests.exceptions.JSONDecodeError:
+        raise RuntimeError("La respuesta no llegó en el formato esperado")
+
 #Retornar la informacion
 def extraer_texto(datos):
-    return datos["candidates"][0]["content"]["parts"][0]["text"]
+    try:
+        return datos["candidates"][0]["content"]["parts"][0]["text"]
+    except (KeyError, IndexError):
+        raise RuntimeError("La estructura de la respuesta no es la esperada")
 
 def obtener_dato_de_prueba(pregunta):
     url, body = armar_peticion(pregunta) #Obtiene url y body
     datos = enviar_peticion(url, body) #Envia la peticion y obtiene la respuesta
     return extraer_texto(datos) #Extrae el texto de la respuesta
 
-
-print(obtener_dato_de_prueba("Confirma en una frase corta que esta conexión funciona"))
+try:
+    print(obtener_dato_de_prueba("Confirma en una frase corta que esta conexión funciona"))
+except (ValueError, RuntimeError) as error:
+    print(f"No se pudo completar la operación: {error}")
