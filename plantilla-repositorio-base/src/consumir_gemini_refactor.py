@@ -56,9 +56,41 @@ def extraer_texto(datos):
 def obtener_dato_de_prueba(pregunta):
     url, body = armar_peticion(pregunta) #Obtiene url y body
     datos = enviar_peticion(url, body) #Envia la peticion y obtiene la respuesta
+    costo = calcular_costo(datos, 0.00000075,0.00000375) #Calcula el costo de la peticion
+    print(f"Costo de la petición: ${costo:.6f} USD") #Imprime el costo de la peticion
     return extraer_texto(datos) #Extrae el texto de la respuesta
 
+#def calcular_costo(datos: dict,precio_entrada: float,precio_salida: float) -> float:
+def calcular_costo(datos,precio_entrada,precio_salida):
+    #Datos porque tiene todo lo que se necesita para calcular el costo (tokens, modelo, etc)
+    #datos = {dict..... "usageMetadata"}
+    uso = datos["usageMetadata"]
+    '''
+    uso = {
+        "promptTokenCount": 8,
+        "candidatesTokenCount": 14,
+        "totalTokenCount": 355,
+        "promptTokensDetails": [
+            {
+                "modality": "TEXT",
+                "tokenCount": 8
+            }
+        ],
+        "thoughtsTokenCount": 333,
+        "serviceTier": "standard"
+    }
+    '''
+    tokens_entrada = uso["promptTokenCount"]
+    tokens_salida = uso["candidatesTokenCount"]
+    tokens_razonamiento = uso["thoughtsTokenCount"]
+    try:
+        costo = (tokens_entrada * precio_entrada) + ((tokens_salida + tokens_razonamiento) * precio_salida)
+        return costo
+    except KeyError:
+        raise RuntimeError("La estructura de la respuesta no es la esperada")
+
 try:
-    print(obtener_dato_de_prueba("Confirma en una frase corta que esta conexión funciona"))
+    print(obtener_dato_de_prueba("Entregame un pronostico avanzado del clima para la ciudad de Santiago de Chile, para el día de mañana"))
+
 except (ValueError, RuntimeError) as error:
     print(f"No se pudo completar la operación: {error}")
