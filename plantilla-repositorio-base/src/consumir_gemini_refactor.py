@@ -1,12 +1,14 @@
 # Para interactuar con el sistema operativo  porque necesitamos ir a obtener env.
 import os
+#sirve para medir el tiempo de ejecución de la función
+import time
 # Sirve para hacer las peticiones 
 import requests
 # Sirve para leer el archivo .env y obtener las variables de entorno
 from dotenv import load_dotenv
 
 load_dotenv()  # Carga las variables de entorno desde el archivo .env
-MODELO = "gemini-flash-latest"
+MODELO = "gemini-3.6-flash"
 URL_BASE = "https://generativelanguage.googleapis.com/v1beta/models/"
 API_KEY = os.getenv("GEMINI-API-KEY")  # Obtiene la clave de la variable de entorno
 
@@ -33,7 +35,7 @@ def armar_peticion(pregunta):
 def enviar_peticion(url, body):
     try:
         respuesta = requests.post(url, json=body, timeout=30)  # Se establece un tiempo de espera de 30 segundos
-    except requests.excepcions.ConnectionError:
+    except requests.exceptions.ConnectionError:
         raise RuntimeError("No se pudo conectar con el servicio")
     except requests.exceptions.Timeout:
         raise RuntimeError("La solicitud ha excedido el tiempo de espera")
@@ -54,8 +56,17 @@ def extraer_texto(datos):
         raise RuntimeError("La estructura de la respuesta no es la esperada")
 
 def obtener_dato_de_prueba(pregunta):
+    
     url, body = armar_peticion(pregunta) #Obtiene url y body
+    #Contador de latencia
+    inicio = time.perf_counter() #Inicia el contador de tiempo
+
     datos = enviar_peticion(url, body) #Envia la peticion y obtiene la respuesta
+    #Contador de latencia
+    fin = time.perf_counter() #Finaliza el contador de tiempo
+    latencia = fin - inicio #Calcula la latencia
+    print(f"Latencia: {latencia:.2f} segundos") #Imprime la latencia
+
     costo = calcular_costo(datos, 0.00000075,0.00000375) #Calcula el costo de la peticion
     print(f"Costo de la petición: ${costo:.6f} USD") #Imprime el costo de la peticion
     return extraer_texto(datos) #Extrae el texto de la respuesta
@@ -90,7 +101,7 @@ def calcular_costo(datos,precio_entrada,precio_salida):
         raise RuntimeError("La estructura de la respuesta no es la esperada")
 
 try:
-    print(obtener_dato_de_prueba("Entregame un pronostico avanzado del clima para la ciudad de Santiago de Chile, para el día de mañana"))
+    print(obtener_dato_de_prueba("Entregame un pronostico breve del clima para la ciudad de Santiago de Chile, para el día de mañana"))
 
 except (ValueError, RuntimeError) as error:
     print(f"No se pudo completar la operación: {error}")
