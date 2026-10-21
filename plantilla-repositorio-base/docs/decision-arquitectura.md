@@ -1,16 +1,18 @@
 # Decisión de arquitectura: elección de modelo
-  Nombre: Alejandro Orrego
-  Fecha comparación: 2026-10-20
-  Nombre de la miniaplicacion: "Modelo atencion casos"
- ## Modelo elegido
-  **gemini-3.1-flash-lite**
 
-Elegí el modelo porque fue el único que completó las 4 ejecuciones sin errores, aplicó correctamente las políticas de atención en todas ellas y tiene un costo por consulta entre 12 y 18 veces menor que los otros candidatos, con una latencia promedio igual o mejor.  
-  
-# Utilidad de la aplicación
+**Nombre:** Alejandro Orrego  
+**Fecha comparación:** 2026-10-20  
+**Nombre de la miniaplicación:** "Modelo atencion casos"
+
+## Modelo elegido
+
+**gemini-3.1-flash-lite**
+
+Elegí el modelo porque fue el único que completó las 4 ejecuciones sin errores, aplicó correctamente las políticas de atención en todas ellas y tiene un costo por consulta entre 12 y 18 veces menor que los otros candidatos, con una latencia promedio igual o mejor.
+
+## Utilidad de la aplicación
 
 La aplicación sirve para ayudar a ejecutivos de un contact center a responder, mientras el cliente espera en línea, la pregunta "¿qué le respondo a este cliente y en qué estado está su caso?". Para ello cruza una base de conocimiento con procedimientos y políticas de atención (RAG) con el estado de los casos del cliente en un CRM simulado expuesto por API.
-
 
 Los requisitos que necesito cumplir son:
 
@@ -18,43 +20,46 @@ Los requisitos que necesito cumplir son:
 * **Requisito 2 – Latencia y disponibilidad para atención en línea:** el ejecutivo tiene al cliente esperando, por lo que el modelo debe responder rápido y de forma estable, sin fallas de servicio.
 * **Requisito 3 – Costo sostenible a escala:** el costo por consulta debe ser bajo, porque la aplicación se usa en cada interacción de cada ejecutivo.
 
- ## Diagrama de arquitectura
-  [Diagrama de Arquitectura] - (docs/secuencia gemini.drawio)
+## Diagrama de arquitectura
 
- ## Comparación de candidatos
+[Diagrama de Arquitectura](docs/secuencia%20gemini.drawio)
+
+## Comparación de candidatos
 
 Se compararon los modelos **gemini-3.1-flash-lite**, **gemini-3.8-flash** y **gemini-3.6-flash**, ejecutando 4 veces la misma petición con cada uno. El prompt simula el caso real del proyecto: políticas de reembolso y escalamiento (RAG) más el estado del cliente en el CRM, con un caso de reembolso que supera el plazo comprometido.
 
 ### Resultados de la medición
 
-| Criterio | gemini-3.1-flash-lite | gemini-3.8-flash | gemini-3.6-flash |
-|---|---|---|---|
-| Ejecuciones exitosas | **4 de 4** | 1 de 4 | 1 de 4 |
-| Latencia promedio | **9,35 s** | 18,19 s (1 muestra) | 9,58 s (1 muestra) |
-| Latencia mínima – máxima | 5,65 s – 13,25 s | No medible | No medible |
-| Costo por consulta (USD) | **$0,000305** | $0,003704 | $0,005444 |
-| Costo relativo vs flash-lite | **1x** | ≈ 12x | ≈ 18x |
-| Proyección 10.000 consultas/mes | **≈ $3** | ≈ $37 | ≈ $54 |
-| Errores observados | Ninguno | 503 (servicio sobrecargado) y 2 timeouts (más de 30 s) | 2 × 429 (límite de peticiones) y 503 |
-| Precio por 1M tokens (entrada / salida) | $0,25 / $1,50 | $0,75 / $3,75 | $0,75 / $3,75 |
+| Criterio                            | 3.1-flash-lite | 3.8-flash            | 3.6-flash        |
+|:------------------------------------|----------------|----------------------|------------------|
+| Ejecuciones exitosas                | **4 de 4**     | 1 de 4               | 1 de 4           |
+| Latencia promedio                   | **9,35 s**     | 18,19 s (n=1)        | 9,58 s (n=1)     |
+| Latencia mín – máx                  | 5,65 – 13,25 s | No medible           | No medible       |
+| Costo por consulta (USD)            | **$0,000305**  | $0,003704            | $0,005444        |
+| Costo relativo                      | **1x**         | ≈ 12x                | ≈ 18x            |
+| Proyección 10.000 consultas/mes     | **≈ $3**       | ≈ $37                | ≈ $54            |
+| Errores observados                  | Ninguno        | 1 × 503, 2 × timeout | 2 × 429, 1 × 503 |
+| Precio 1M tokens (entrada / salida) | $0,25 / $1,50  | $0,75 / $3,75        | $0,75 / $3,75    |
 
 ### Evaluación de calidad de respuesta
 
-| Criterio | gemini-3.1-flash-lite | gemini-3.8-flash | gemini-3.6-flash |
-|---|---|---|---|
-| Detecta que el caso superó el plazo (13 vs 10 días hábiles) |  4 de 4 |  1 de 1 |  1 de 1 |
-| Aplica escalamiento según POL-12 |  4 de 4 |  1 de 1 |  1 de 1 |
-| Cita ambas políticas (POL-07 y POL-12) | Parcial (2 de 4) |  |  |
-| Respuesta consistente entre ejecuciones |  Misma conclusión en las 4 | No evaluable | No evaluable |
-| Compromisos no respaldados por la política |  En 3 de 4 ("agilizar su pago", "una resolución", "He escalado" antes de hacerlo) | No observados | No observados |
+| Criterio                               | 3.1-flash-lite   | 3.8-flash     | 3.6-flash     |
+|:---------------------------------------|------------------|---------------|---------------|
+| Detecta plazo superado (13 vs 10 días) | Sí (4 de 4)      | Sí (1 de 1)   | Sí (1 de 1)   |
+| Aplica escalamiento POL-12             | Sí (4 de 4)      | Sí (1 de 1)   | Sí (1 de 1)   |
+| Cita POL-07 y POL-12                   | Parcial (2 de 4) | Sí            | Sí            |
+| Consistencia entre ejecuciones         | Sí (4 de 4)      | No evaluable  | No evaluable  |
+| Compromisos no respaldados             | Sí (3 de 4) *    | No observados | No observados |
+
+\* Ejemplos: "agilizar su pago", "una resolución" en 48 horas y "He escalado" antes de que el ejecutivo lo haga.
 
 ### Cumplimiento de requisitos
 
-| Requisito | gemini-3.1-flash-lite | gemini-3.8-flash | gemini-3.6-flash |
-|---|---|---|---|
-| R1 – Precisión en políticas |  Cumple, con ajuste de prompt |  Cumple |  Cumple |
-| R2 – Latencia y disponibilidad |  Disponible 4 de 4, pero la latencia es alta para atención en línea |  3 de 4 fallidas, la más lenta |  3 de 4 fallidas |
-| R3 – Costo sostenible |  El más bajo |  ≈ 12x |  ≈ 18x, el más alto |
+| Requisito                      | 3.1-flash-lite                  | 3.8-flash                 | 3.6-flash                 |
+|:-------------------------------|---------------------------------|---------------------------|---------------------------|
+| R1 – Precisión en políticas    | Cumple (con ajuste de prompt)   | Cumple                    | Cumple                    |
+| R2 – Latencia y disponibilidad | Parcial (4 de 4, latencia alta) | No cumple (3 de 4 fallas) | No cumple (3 de 4 fallas) |
+| R3 – Costo sostenible          | Cumple (el más bajo)            | Parcial (≈ 12x)           | No cumple (≈ 18x)         |
 
 ## Justificación
 
@@ -65,14 +70,14 @@ Se definió usar el modelo **gemini-3.1-flash-lite** por las siguientes razones:
 3. **Costo significativamente menor:** cuesta entre 12 y 18 veces menos por consulta. Los modelos Flash usan más tokens de razonamiento (que se cobran como salida) para llegar a la misma conclusión.
 4. **Latencia igual o mejor:** su promedio (9,35 s) es igual o menor que el de los modelos Flash en su única ejecución exitosa.
 
-**Riesgos identificados y mitigaciones:**
+### Riesgos identificados y mitigaciones
 
-| Riesgo | Mitigación |
-|---|---|
-| Flash-lite compromete acciones o resultados no respaldados por la política | Agregar al prompt una instrucción explícita: "No comprometas plazos, resultados ni acciones que no estén en las políticas entregadas". |
-| Latencia de 5–13 s, alta para atención en línea | Usar streaming para que el ejecutivo empiece a leer en menos de 1 s, limitar el razonamiento y acotar el largo de la respuesta. |
-| Muestra de 4 ejecuciones y prueba sin pausa entre llamadas | Repetir la medición con pausa entre llamadas y timeout de 60 s para validar los modelos Flash con 4 de 4 muestras. |
-| Cambio de precios del proveedor | Mantener los precios parametrizados por modelo y revisarlos periódicamente en la página oficial de precios de Gemini API. |
+| Riesgo                                                     | Mitigación                                                                                                        |
+|:-----------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------|
+| Flash-lite promete acciones no respaldadas por la política | Instrucción explícita en el prompt: "No comprometas plazos, resultados ni acciones que no estén en las políticas" |
+| Latencia de 5–13 s, alta para atención en línea            | Streaming, limitar el razonamiento y acotar el largo de la respuesta                                              |
+| Muestra pequeña y llamadas sin pausa (429)                 | Repetir con pausa entre llamadas y timeout de 60 s                                                                |
+| Cambio de precios del proveedor                            | Precios parametrizados por modelo y revisión periódica en la página oficial de Gemini API                         |
 
 ## Alternativa descartada y por qué
 
