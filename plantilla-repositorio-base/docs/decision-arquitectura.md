@@ -26,14 +26,14 @@ Los requisitos que necesito cumplir son:
 
 ## Comparación de candidatos
 
-Se compararon los modelos **gemini-3.1-flash-lite**, **gemini-3.8-flash** y **gemini-3.6-flash**, ejecutando 4 veces la misma petición con cada uno. El prompt simula el caso real del proyecto: políticas de reembolso y escalamiento (RAG) más el estado del cliente en el CRM, con un caso de reembolso que supera el plazo comprometido.
+Se compararon los modelos **gemini-3.1-flash-lite**, **gemini-3.8-flash** y **gemini-3.6-flash**, ejecutando 4 veces la misma petición con cada uno. El prompt simula el caso real del proyecto: políticas de reembolso y escalamiento más el estado del cliente en el CRM, con un caso de reembolso que supera el plazo comprometido.
 
 ### Resultados de la medición
 
 | Criterio                            | 3.1-flash-lite | 3.8-flash            | 3.6-flash        |
 |:------------------------------------|----------------|----------------------|------------------|
 | Ejecuciones exitosas                | **4 de 4**     | 1 de 4               | 1 de 4           |
-| Latencia promedio                   | **9,35 s**     | 18,19 s (n=1)        | 9,58 s (n=1)     |
+| Latencia promedio                   | **9,35 s**     | 18,19 s        | 9,58 s     |
 | Latencia mín – máx                  | 5,65 – 13,25 s | No medible           | No medible       |
 | Costo por consulta (USD)            | **$0,000305**  | $0,003704            | $0,005444        |
 | Costo relativo                      | **1x**         | ≈ 12x                | ≈ 18x            |
@@ -41,17 +41,6 @@ Se compararon los modelos **gemini-3.1-flash-lite**, **gemini-3.8-flash** y **ge
 | Errores observados                  | Ninguno        | 1 × 503, 2 × timeout | 2 × 429, 1 × 503 |
 | Precio 1M tokens (entrada / salida) | $0,25 / $1,50  | $0,75 / $3,75        | $0,75 / $3,75    |
 
-### Evaluación de calidad de respuesta
-
-| Criterio                               | 3.1-flash-lite   | 3.8-flash     | 3.6-flash     |
-|:---------------------------------------|------------------|---------------|---------------|
-| Detecta plazo superado (13 vs 10 días) | Sí (4 de 4)      | Sí (1 de 1)   | Sí (1 de 1)   |
-| Aplica escalamiento POL-12             | Sí (4 de 4)      | Sí (1 de 1)   | Sí (1 de 1)   |
-| Cita POL-07 y POL-12                   | Parcial (2 de 4) | Sí            | Sí            |
-| Consistencia entre ejecuciones         | Sí (4 de 4)      | No evaluable  | No evaluable  |
-| Compromisos no respaldados             | Sí (3 de 4) *    | No observados | No observados |
-
-\* Ejemplos: "agilizar su pago", "una resolución" en 48 horas y "He escalado" antes de que el ejecutivo lo haga.
 
 ### Cumplimiento de requisitos
 
@@ -59,7 +48,7 @@ Se compararon los modelos **gemini-3.1-flash-lite**, **gemini-3.8-flash** y **ge
 |:-------------------------------|---------------------------------|---------------------------|---------------------------|
 | R1 – Precisión en políticas    | Cumple (con ajuste de prompt)   | Cumple                    | Cumple                    |
 | R2 – Latencia y disponibilidad | Parcial (4 de 4, latencia alta) | No cumple (3 de 4 fallas) | No cumple (3 de 4 fallas) |
-| R3 – Costo sostenible          | Cumple (el más bajo)            | Parcial (≈ 12x)           | No cumple (≈ 18x)         |
+| R3 – Costo sostenible          | Cumple (el más bajo)            | Parcial            | No cumple        |
 
 ## Justificación
 
