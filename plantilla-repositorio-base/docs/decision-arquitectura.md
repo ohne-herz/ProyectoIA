@@ -22,7 +22,7 @@ Los requisitos que necesito cumplir son:
 
 ## Diagrama de arquitectura
 
-[Diagrama de Arquitectura](docs/secuencia%20gemini.drawio)
+[Diagrama de Arquitectura](secuencia%20gemini.drawio)
 
 ## Comparación de candidatos
 
