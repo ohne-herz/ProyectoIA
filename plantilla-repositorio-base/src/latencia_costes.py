@@ -13,12 +13,15 @@ URL_BASE = "https://generativelanguage.googleapis.com/v1beta/models/"
 API_KEY = os.getenv("GEMINI-API-KEY")  # Obtiene la clave de la variable de entorno
 
 #Funcion para crear la solicitud
-def armar_peticion(pregunta):
+def armar_peticion(pregunta,system_instruction):
     if pregunta == "": # if not pregunta --- if pregunta empty
         raise ValueError("La pregunta no puede estar vacía")
     
     url = f"{URL_BASE}{MODELO}:generateContent?key={API_KEY}"
     body = {
+        "systemInstruction":{
+            "parts":[{"text":system_instruction}]
+        },
      	"contents": [
          	{
                  "parts": [
@@ -56,8 +59,8 @@ def extraer_texto(datos):
         raise RuntimeError("La estructura de la respuesta no es la esperada")
 
 def obtener_dato_de_prueba(pregunta):
-    
-    url, body = armar_peticion(pregunta) #Obtiene url y body
+    system_instruction = "Eres un asistente amigable y respondes en máximo 2 palabras."
+    url, body = armar_peticion(pregunta,system_instruction) #Obtiene url y body
     #Contador de latencia
     inicio = time.perf_counter() #Inicia el contador de tiempo
 
@@ -115,7 +118,7 @@ def calcular_latencia(pregunta, repeticiones=4):
         print("=" * 60)
         try:
             respuesta = obtener_dato_de_prueba(pregunta)  # Imprime latencia y costo
-            #print(f"Respuesta:\n{respuesta}\n")
+            print(f"Respuesta:\n{respuesta}\n")
         except (ValueError, RuntimeError, KeyError) as error:
             # Si una ejecución falla, se informa y se continúa con la siguiente
             print(f"La ejecución {i} falló: {error}\n")
