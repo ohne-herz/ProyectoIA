@@ -23,3 +23,5 @@ typing-inspection==0.4.4
 typing_extensions==4.16.0
 urllib3==2.8.0
 websockets==16.1.1
+dotenv==0.9.9
+python-dotenv==1.2.4

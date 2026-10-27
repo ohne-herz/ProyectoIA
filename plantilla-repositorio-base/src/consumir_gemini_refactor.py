@@ -44,6 +44,17 @@ def enviar_peticion(url, body):
     except requests.exceptions.Timeout:
         raise RuntimeError("La solicitud ha excedido el tiempo de espera")
 
+    if respuesta.status_code in(401,403):
+        raise ValueError("Credenciales inválidas o sin permisos. Revisa tu GEMINI-API-KEY")
+
+    if respuesta.status_code>=500:
+        raise TimeoutError("El proveedor no pudo procesar la petición. Hay que esperar y reintentar")
+
+    if respuesta.status_code == 429:
+        segundos = respuesta.headers.get("Retry-After")
+        mensaje = f"Limite excedido. Reintentar en {segundos}" if segundos else "Límite excedido."
+        raise TimeoutError(mensaje)
+        
     if respuesta.status_code != 200:
         raise RuntimeError(f"Error en la petición. Status Code: {respuesta.status_code}")
     
@@ -133,8 +144,9 @@ def parsear_respuesta_json(texto, claves_requeridas=None):
             raise ValueError(f"Faltan claves en la respuesta: {faltantes}")
 
     return datos
-
+'''
 try:
+   
     print(obtener_dato_de_prueba("""Eres un asistente para ejecutivos de un contact center. El ejecutivo tiene al cliente en línea.
 Responde SOLO con la información entregada. Si falta un dato, dilo explícitamente.
 
@@ -157,4 +169,5 @@ Entrega:
 
 except (ValueError, RuntimeError) as error:
     print(f"No se pudo completar la operación: {error}")
+    '''
 
