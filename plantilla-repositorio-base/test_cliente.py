@@ -51,6 +51,7 @@ def test_con_reintento_no_reintenta_value_error():
         with pytest.raises(ValueError):
             con_reintento(funcion_falla, intentos=3)
 
+    #operacion.assert_called_once() Tambien sirve.
     assert funcion_falla.call_count == 1
     mock_sleep.assert_not_called()
 
