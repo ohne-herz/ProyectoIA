@@ -1,18 +1,22 @@
+from langchain_core.output_parsers import StrOutputParser
 from unittest.mock import MagicMock
-
 from langchain_core.messages import AIMessage
-from langchain_core.runnables import RunnableLambda
+from langchain_core.runnables import (
+    RunnableBranch,
+    RunnablePassthrough,
+    RunnableLambda,
+)
 
 from src.enrutamiento import (
-    construir_paso_clasificacion,
-    construir_cadena_con_enrutamiento,
-    construir_cadena_queja_segura,
+    plantilla_clasificacion,
+    fallback_con_log,
     procesar_mensaje_seguro,
 )
 
 
-# PRUEBA 1:
-# Verifica la normalización con strip().lower()
+# PRUEBA 1
+# Verifica que la clasificación se normalice
+# antes de ser utilizada por el enrutamiento.
 
 def test_clasificacion_normaliza_antes_de_comparar():
 
@@ -22,13 +26,14 @@ def test_clasificacion_normaliza_antes_de_comparar():
         content=" Queja \n"
     )
 
-    paso_clasificacion = (
-        construir_paso_clasificacion(
-            modelo_falso
-        )
+    paso_clasificacion_falso = (
+        plantilla_clasificacion
+        | modelo_falso
+        | StrOutputParser()
+        | (lambda texto: texto.strip().lower())
     )
 
-    resultado = paso_clasificacion.invoke(
+    resultado = paso_clasificacion_falso.invoke(
         {
             "mensaje":
             "Me cobraron dos veces la misma factura."
@@ -38,8 +43,8 @@ def test_clasificacion_normaliza_antes_de_comparar():
     assert resultado == "queja"
 
 
-# PRUEBA 2:
-# Verifica la ruta de queja
+# PRUEBA 2
+# Verifica que una queja vaya a cadena_queja.
 
 def test_enrutamiento_va_a_cadena_queja():
 
@@ -51,12 +56,30 @@ def test_enrutamiento_va_a_cadena_queja():
         "respuesta de queja"
     )
 
-    cadena = construir_cadena_con_enrutamiento(
-        paso_clasificacion=clasificacion_falsa,
-        cadena_queja=cadena_queja_falsa,
+    cadena_sugerencia_falsa = MagicMock()
+
+    cadena_pregunta_falsa = MagicMock()
+
+    bifurcacion_falsa = RunnableBranch(
+        (
+            lambda x: x["clasificacion"] == "queja",
+            cadena_queja_falsa,
+        ),
+        (
+            lambda x: x["clasificacion"] == "sugerencia",
+            cadena_sugerencia_falsa,
+        ),
+        cadena_pregunta_falsa,
     )
 
-    resultado = cadena.invoke(
+    cadena_falsa = (
+        RunnablePassthrough.assign(
+            clasificacion=clasificacion_falsa
+        )
+        | bifurcacion_falsa
+    )
+
+    resultado = cadena_falsa.invoke(
         {
             "mensaje":
             "Me cobraron dos veces la misma factura."
@@ -67,8 +90,8 @@ def test_enrutamiento_va_a_cadena_queja():
     assert resultado == "respuesta de queja"
 
 
-# PRUEBA 3:
-# Verifica la ruta de sugerencia
+# PRUEBA 3
+# Verifica que una sugerencia vaya a cadena_sugerencia.
 
 def test_enrutamiento_va_a_cadena_sugerencia():
 
@@ -80,24 +103,43 @@ def test_enrutamiento_va_a_cadena_sugerencia():
         "respuesta de sugerencia"
     )
 
-    cadena = construir_cadena_con_enrutamiento(
-        paso_clasificacion=clasificacion_falsa,
-        cadena_sugerencia=cadena_sugerencia_falsa,
+    cadena_queja_falsa = MagicMock()
+
+    cadena_pregunta_falsa = MagicMock()
+
+    bifurcacion_falsa = RunnableBranch(
+        (
+            lambda x: x["clasificacion"] == "queja",
+            cadena_queja_falsa,
+        ),
+        (
+            lambda x: x["clasificacion"] == "sugerencia",
+            cadena_sugerencia_falsa,
+        ),
+        cadena_pregunta_falsa,
     )
 
-    resultado = cadena.invoke(
+    cadena_falsa = (
+        RunnablePassthrough.assign(
+            clasificacion=clasificacion_falsa
+        )
+        | bifurcacion_falsa
+    )
+
+    resultado = cadena_falsa.invoke(
         {
             "mensaje":
-            "Deberían agregar atención por WhatsApp."
+            "Deberían tener más ejecutivos disponibles."
         }
     )
 
     assert cadena_sugerencia_falsa.called
+
     assert resultado == "respuesta de sugerencia"
 
 
-# PRUEBA 4:
-# Verifica la ruta de pregunta
+# PRUEBA 4
+# Verifica la ruta pregunta.
 
 def test_enrutamiento_va_a_cadena_pregunta():
 
@@ -109,24 +151,44 @@ def test_enrutamiento_va_a_cadena_pregunta():
         "respuesta de pregunta"
     )
 
-    cadena = construir_cadena_con_enrutamiento(
-        paso_clasificacion=clasificacion_falsa,
-        cadena_pregunta=cadena_pregunta_falsa,
+    cadena_queja_falsa = MagicMock()
+
+    cadena_sugerencia_falsa = MagicMock()
+
+    bifurcacion_falsa = RunnableBranch(
+        (
+            lambda x: x["clasificacion"] == "queja",
+            cadena_queja_falsa,
+        ),
+        (
+            lambda x: x["clasificacion"] == "sugerencia",
+            cadena_sugerencia_falsa,
+        ),
+        cadena_pregunta_falsa,
     )
 
-    resultado = cadena.invoke(
+    cadena_falsa = (
+        RunnablePassthrough.assign(
+            clasificacion=clasificacion_falsa
+        )
+        | bifurcacion_falsa
+    )
+
+    resultado = cadena_falsa.invoke(
         {
             "mensaje":
-            "¿Cómo puedo consultar el estado de mi caso?"
+            "¿Cómo puedo consultar mi última factura?"
         }
     )
 
     assert cadena_pregunta_falsa.called
+
     assert resultado == "respuesta de pregunta"
 
 
-# PRUEBA 5:
-# Verifica la ruta por defecto
+# PRUEBA 5
+# Verifica que una categoría desconocida use
+# la ruta por defecto.
 
 def test_enrutamiento_usa_default_ante_categoria_desconocida():
 
@@ -142,12 +204,30 @@ def test_enrutamiento_usa_default_ante_categoria_desconocida():
         "respuesta por defecto"
     )
 
-    cadena = construir_cadena_con_enrutamiento(
-        paso_clasificacion=clasificacion_falsa,
-        cadena_pregunta=cadena_pregunta_falsa,
+    cadena_queja_falsa = MagicMock()
+
+    cadena_sugerencia_falsa = MagicMock()
+
+    bifurcacion_falsa = RunnableBranch(
+        (
+            lambda x: x["clasificacion"] == "queja",
+            cadena_queja_falsa,
+        ),
+        (
+            lambda x: x["clasificacion"] == "sugerencia",
+            cadena_sugerencia_falsa,
+        ),
+        cadena_pregunta_falsa,
     )
 
-    resultado = cadena.invoke(
+    cadena_falsa = (
+        RunnablePassthrough.assign(
+            clasificacion=clasificacion_falsa
+        )
+        | bifurcacion_falsa
+    )
+
+    resultado = cadena_falsa.invoke(
         {
             "mensaje":
             "Este es un mensaje ambiguo."
@@ -155,63 +235,65 @@ def test_enrutamiento_usa_default_ante_categoria_desconocida():
     )
 
     assert cadena_pregunta_falsa.called
+
     assert resultado == "respuesta por defecto"
 
 
-# PRUEBA 6:
-# Verifica el fallback de la cadena de queja
+# PRUEBA 6
+# Verifica que with_fallbacks use realmente
+# la respuesta genérica cuando falla la chain.
 
-def test_cadena_queja_usa_fallback_ante_fallo_del_modelo():
+def test_cadena_robusta_usa_fallback_ante_fallo():
 
     def fallar_a_proposito(x):
-
         raise ConnectionError(
-            "Error de conexión simulado"
+            "Error de red simulado"
         )
 
-    cadena_queja_falsa = RunnableLambda(
+    cadena_rota = RunnableLambda(
         fallar_a_proposito
     )
 
-    cadena_queja_segura = (
-        construir_cadena_queja_segura(
-            cadena_queja_falsa
+    respuesta_generica_falsa = RunnableLambda(
+        fallback_con_log
+    )
+
+    cadena_robusta_falsa = (
+        cadena_rota.with_fallbacks(
+            [respuesta_generica_falsa]
         )
     )
 
-    resultado = cadena_queja_segura.invoke(
+    resultado = cadena_robusta_falsa.invoke(
         {
             "mensaje":
-            "Esto no funciona."
+            "Tengo problemas con mi factura."
         }
     )
 
     assert "equipo" in resultado.lower()
 
 
-# PRUEBA 7:
-# Verifica la protección general con try/except
+# PRUEBA 7
+# Verifica la protección final con try/except.
+#
+# Aquí NO usamos with_fallbacks porque queremos
+# provocar una excepción que llegue efectivamente
+# hasta procesar_mensaje_seguro.
 
 def test_procesar_mensaje_seguro_no_propaga_excepciones():
 
-    clasificacion_falsa = MagicMock()
-
-    clasificacion_falsa.side_effect = (
-        ConnectionError(
-            "Error de clasificación simulado"
+    def fallar_a_proposito(x):
+        raise ConnectionError(
+            "Error general simulado"
         )
-    )
 
-    cadena_falsa = (
-        construir_cadena_con_enrutamiento(
-            paso_clasificacion=(
-                clasificacion_falsa
-            ),
-        )
+    cadena_rota = RunnableLambda(
+        fallar_a_proposito
     )
 
     resultado = procesar_mensaje_seguro(
-        cadena_falsa,
+        cadena_rota,
         "Mensaje de prueba",
     )
 

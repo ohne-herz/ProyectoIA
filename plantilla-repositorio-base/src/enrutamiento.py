@@ -8,6 +8,30 @@ from langchain_core.runnables import (
     RunnableLambda,
 )
 
+import logging
+
+
+# CONFIGURACIÓN DE LOGGING
+
+logging.basicConfig(
+    level=logging.WARNING,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s", #2026-11-04 16:40 [WARNING] main: No se pudo procesar x
+    datefmt="%Y-%m-%d %H:%M:%S",
+    filename="error.log",
+    filemode="a", # agrega al final del archivo la nueva linea
+    encoding="utf-8",
+    force=True
+)
+
+logger = logging.getLogger(__name__)
+
+
+load_dotenv()
+
+modelo = ChatGoogleGenerativeAI(
+    model="gemini-3.1-flash-lite"
+)
+
 
 # PLANTILLA DE CLASIFICACIÓN
 
@@ -19,132 +43,111 @@ plantilla_clasificacion = PromptTemplate.from_template(
 )
 
 
-# CONSTRUIR PASO DE CLASIFICACIÓN
+# PASO DE CLASIFICACIÓN
 
-def construir_paso_clasificacion(modelo):
-
-    return (
-        plantilla_clasificacion
-        | modelo
-        | StrOutputParser()
-        | (lambda texto: texto.strip().lower())
-    )
-
-
-# CONSTRUIR RUTA DE PREGUNTA
-
-def construir_cadena_pregunta(modelo):
-
-    return (
-        PromptTemplate.from_template(
-            "Responde la siguiente pregunta de un cliente de contact "
-            "center de forma clara y precisa. "
-            "No inventes información que no aparezca en el mensaje.\n\n"
-            "{mensaje}"
-        )
-        | modelo
-        | StrOutputParser()
-    )
-
-
-# CONSTRUIR RUTA DE QUEJA
-
-def construir_cadena_queja(modelo):
-
-    return (
-        PromptTemplate.from_template(
-            "Responde a la siguiente queja con empatía. "
-            "Primero reconoce el problema del cliente y luego explica "
-            "qué debería hacerse para revisar su caso. "
-            "No inventes información.\n\n"
-            "{mensaje}"
-        )
-        | modelo
-        | StrOutputParser()
-    )
-
-
-# CONSTRUIR RUTA DE SUGERENCIA
-
-def construir_cadena_sugerencia(modelo):
-
-    return (
-        PromptTemplate.from_template(
-            "Agradece la siguiente sugerencia de un cliente y explica "
-            "que será evaluada por el equipo responsable. "
-            "No prometas que será implementada.\n\n"
-            "{mensaje}"
-        )
-        | modelo
-        | StrOutputParser()
-    )
-
-
-# RESPUESTA DE RESPALDO
-
-respuesta_generica = RunnableLambda(
-    lambda x: (
-        "Gracias por tu mensaje. Un miembro de nuestro "
-        "equipo revisará tu caso y te responderá pronto."
-    )
+paso_clasificacion = (
+    plantilla_clasificacion
+    | modelo
+    | StrOutputParser()
+    | (lambda texto: texto.strip().lower())
 )
 
 
-# PROTEGER LA RUTA DE QUEJA
+# RUTA PREGUNTA
 
-def construir_cadena_queja_segura(cadena_queja):
+cadena_pregunta = (
+    PromptTemplate.from_template(
+        "Responde la siguiente pregunta de un cliente de contact "
+        "center de forma clara y precisa. "
+        "No inventes información que no aparezca en el mensaje.\n\n"
+        "{mensaje}"
+    )
+    | modelo
+    | StrOutputParser()
+)
 
-    return cadena_queja.with_fallbacks(
-        [respuesta_generica]
+
+# RUTA QUEJA
+
+cadena_queja = (
+    PromptTemplate.from_template(
+        "Responde a la siguiente queja con empatía. "
+        "Primero reconoce el problema del cliente y luego explica "
+        "qué debería hacerse para revisar su caso. "
+        "No inventes información.\n\n"
+        "{mensaje}"
+    )
+    | modelo
+    | StrOutputParser()
+)
+
+
+# RUTA SUGERENCIA
+
+cadena_sugerencia = (
+    PromptTemplate.from_template(
+        "Agradece la siguiente sugerencia de un cliente y explica "
+        "que será evaluada por el equipo responsable. "
+        "No prometas que será implementada.\n\n"
+        "{mensaje}"
+    )
+    | modelo
+    | StrOutputParser()
+)
+
+
+# BIFURCACIÓN
+
+bifurcacion = RunnableBranch(
+
+    (
+        lambda x: x["clasificacion"] == "queja",
+        cadena_queja
+    ),
+
+    (
+        lambda x: x["clasificacion"] == "sugerencia",
+        cadena_sugerencia
+    ),
+
+    # Ruta por defecto
+    cadena_pregunta
+)
+
+
+# CADENA CON ENRUTAMIENTO
+
+cadena_con_enrutamiento = (
+
+    RunnablePassthrough.assign(
+        clasificacion=paso_clasificacion
     )
 
-
-# CONSTRUIR LA CADENA CON ENRUTAMIENTO
-
-def construir_cadena_con_enrutamiento(
-    paso_clasificacion,
-    cadena_queja=None,
-    cadena_sugerencia=None,
-    cadena_pregunta=None,
-):
-
-    cadena_queja = (
-        cadena_queja or RunnablePassthrough()
-    )
-
-    cadena_sugerencia = (
-        cadena_sugerencia or RunnablePassthrough()
-    )
-
-    cadena_pregunta = (
-        cadena_pregunta or RunnablePassthrough()
-    )
-
-    bifurcacion = RunnableBranch(
-
-        (
-            lambda x: x["categoria"] == "queja",
-            cadena_queja,
-        ),
-
-        (
-            lambda x: x["categoria"] == "sugerencia",
-            cadena_sugerencia,
-        ),
-
-        # Ruta por defecto
-        cadena_pregunta,
-    )
-
-    return (
-        RunnablePassthrough.assign(
-            categoria=paso_clasificacion
-        )
-        | bifurcacion
-    )
+    | bifurcacion
+)
 
 
-# PROTECCIÓN GENERAL DE LA CADENA
+# RESPUESTA GENÉRICA
+# Se utiliza como fallback si falla cadena_con_enrutamiento
+def fallback_con_log(x):
+    logger.warning("Cadena principal falló. Activando respuesta genericas")
+    return "Gracias por tu mensaje. Un miembro de nuestro equipo revisará tu caso y te responderá pronto."
+
+respuesta_generica = RunnableLambda(
+    fallback_con_log
+)
+
+
+# CADENA ROBUSTA
+# Si falla cualquier parte de cadena_con_enrutamiento,
+# ejecuta respuesta_generica.
+
+cadena_robusta = cadena_con_enrutamiento.with_fallbacks(
+    [respuesta_generica]
+)
+
+
+# PROTECCIÓN GENERAL
 
 def procesar_mensaje_seguro(cadena, mensaje):
 
@@ -156,9 +159,8 @@ def procesar_mensaje_seguro(cadena, mensaje):
 
     except Exception as error:
 
-        print(
-            f"Error procesando mensaje: {error}"
-        )
+        # Registra el error que no pudo resolver el fallback
+        logger.error("Error procesando mensaje %s", error)
 
         return (
             "No pudimos procesar tu mensaje en este "
@@ -166,67 +168,99 @@ def procesar_mensaje_seguro(cadena, mensaje):
         )
 
 
-# EJECUCIÓN REAL
+# EJECUCIÓN DIRECTA
 
 if __name__ == "__main__":
 
-    load_dotenv()
-
-    modelo = ChatGoogleGenerativeAI(
-        model="gemini-3.1-flash-lite"
-    )
-
-    paso_clasificacion = (
-        construir_paso_clasificacion(modelo)
-    )
-
-    cadena_pregunta = (
-        construir_cadena_pregunta(modelo)
-    )
-
-    cadena_queja = (
-        construir_cadena_queja(modelo)
-    )
-
-    cadena_sugerencia = (
-        construir_cadena_sugerencia(modelo)
-    )
-
-    cadena_queja_segura = (
-        construir_cadena_queja_segura(
-            cadena_queja
-        )
-    )
-
-    cadena_con_enrutamiento = (
-        construir_cadena_con_enrutamiento(
-            paso_clasificacion=paso_clasificacion,
-            cadena_queja=cadena_queja_segura,
-            cadena_sugerencia=cadena_sugerencia,
-            cadena_pregunta=cadena_pregunta,
-        )
-    )
-
-    mensaje_cliente = (
+    mensaje = (
         "Hola, en mi última factura aparece dos veces "
         "el mismo cobro y todavía no tengo una respuesta."
     )
 
-    resultado = procesar_mensaje_seguro(
-        cadena_con_enrutamiento,
-        mensaje_cliente,
+    print(
+        procesar_mensaje_seguro(
+            cadena_robusta,
+            mensaje
+        )
     )
 
-    print(resultado)
 
-#Entrada inicial: {"mensaje": "Deberian de tener mas agentes disponibles"}
-#RunnablePassthrough -> {"mensaje": "Deberian de tener mas agentes disponibles", "clasificacion": "sugerencia"}
-#   1: Pasa elmensaje a paso_clasificacion --> return una palabra (queja, pregunta, sugerencia)
-#   2: Fusiona ambos datos
-#   3: Return {"mensaje": "Deberian de tener mas agentes disponibles", "clasificacion": "sugerencia"}}
-# Pasa el resultado a bifurcacion (runnableBranch)
-#       IF¿Clasificación ?== queja? No, pasa a siguiente condición
-#       ELIF ¿Clasificación ?== sugerencia? 
-#           Si, entra a cadena_sugerencia
-#           cadena_sugerencia.invoke({"mensaje": "Deberian de tener mas agentes disponibles", "clasificacion": "sugerencia"})
-#           return respuesta final generada.
+# Entrada inicial:
+#
+# {
+#     "mensaje": "Deberian de tener mas agentes disponibles"
+# }
+#
+#                   |
+#                   v
+#
+# RunnablePassthrough.assign
+#
+# 1. Pasa el mensaje a paso_clasificacion
+#       -> retorna "sugerencia"
+#
+# 2. Fusiona clasificación y mensaje
+#
+# 3. Retorna:
+#
+# {
+#     "mensaje": "Deberian de tener mas agentes disponibles",
+#     "clasificacion": "sugerencia"
+# }
+#
+#                   |
+#                   v
+#
+# bifurcacion (RunnableBranch)
+#
+# IF clasificacion == "queja"
+#       No
+#
+# ELIF clasificacion == "sugerencia"
+#       Si
+#
+#       Entra a cadena_sugerencia
+#
+#       cadena_sugerencia.invoke(
+#           {
+#               "mensaje":
+#               "Deberian de tener mas agentes disponibles",
+#
+#               "clasificacion":
+#               "sugerencia"
+#           }
+#       )
+#
+#       Retorna respuesta final generada.
+#
+#
+# MANEJO DE ERRORES:
+#
+# cadena_con_enrutamiento
+#       |
+#       | falla
+#       v
+#
+# with_fallbacks
+#       |
+#       v
+#
+# respuesta_generica
+#       |
+#       v
+#
+# "Gracias por tu mensaje..."
+#
+#
+# Si incluso cadena_robusta no puede entregar
+# una respuesta:
+#
+# procesar_mensaje_seguro
+#       |
+#       v
+#
+# except Exception
+#       |
+#       +----> logger.error(...)
+#       |
+#       +----> "No pudimos procesar tu mensaje..."
