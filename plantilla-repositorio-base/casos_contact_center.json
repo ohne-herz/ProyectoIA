@@ -1,0 +1,82 @@
+[
+  {
+    "consulta": "¿Cuál es el estado del reembolso de María González?",
+    "referencia": "El caso de reembolso CAS-1043 figura como aprobado; se aprobó hace 13 días hábiles."
+  },
+  {
+    "consulta": "¿Cuál es el número del caso asociado al reembolso?",
+    "referencia": "El reembolso corresponde al caso CAS-1043."
+  },
+  {
+    "consulta": "¿Cuántos días hábiles han pasado desde la aprobación del reembolso?",
+    "referencia": "Han pasado 13 días hábiles desde la aprobación del reembolso CAS-1043."
+  },
+  {
+    "consulta": "¿Qué plazo establece la política para abonar un reembolso aprobado?",
+    "referencia": "POL-07 establece un plazo máximo de 10 días hábiles para abonar un reembolso aprobado."
+  },
+  {
+    "consulta": "¿El caso de reembolso CAS-1043 superó el plazo comprometido?",
+    "referencia": "Sí. Han pasado 13 días hábiles desde la aprobación y POL-07 establece un máximo de 10 días hábiles."
+  },
+  {
+    "consulta": "¿En cuántos días hábiles se excedió el plazo del reembolso?",
+    "referencia": "El plazo se excedió en 3 días hábiles: transcurrieron 13 y POL-07 permite un máximo de 10."
+  },
+  {
+    "consulta": "¿Qué debe hacer el ejecutivo al superar el plazo del reembolso?",
+    "referencia": "Debe escalar el caso CAS-1043 a Supervisión y ofrecer una nueva fecha de contacto dentro de 48 horas, según POL-12."
+  },
+  {
+    "consulta": "¿A qué área debe escalarse el caso CAS-1043?",
+    "referencia": "El caso CAS-1043 debe escalarse a Supervisión de acuerdo con POL-12."
+  },
+  {
+    "consulta": "¿En qué plazo debe ofrecerse una nueva fecha de contacto?",
+    "referencia": "POL-12 indica ofrecer al cliente una nueva fecha de contacto dentro de 48 horas."
+  },
+  {
+    "consulta": "¿Qué política regula el plazo del reembolso aprobado?",
+    "referencia": "La política POL-07 establece un máximo de 10 días hábiles para abonar reembolsos aprobados."
+  },
+  {
+    "consulta": "¿Qué política se aplica cuando el plazo comprometido está vencido?",
+    "referencia": "Se aplica POL-12: escalar a Supervisión y ofrecer una nueva fecha de contacto dentro de 48 horas."
+  },
+  {
+    "consulta": "¿Qué casos figuran en el CRM de María González?",
+    "referencia": "Figuran CAS-1043, reembolso aprobado, y CAS-1051, cambio de dirección cerrado."
+  },
+  {
+    "consulta": "¿Cuál es el estado del caso de cambio de dirección?",
+    "referencia": "El caso de cambio de dirección CAS-1051 está cerrado."
+  },
+  {
+    "consulta": "¿El caso de cambio de dirección es el que corresponde al reclamo del reembolso?",
+    "referencia": "No. El reclamo del reembolso corresponde a CAS-1043; CAS-1051 es un cambio de dirección cerrado."
+  },
+  {
+    "consulta": "¿Se puede asegurar al cliente que el reembolso ya fue depositado?",
+    "referencia": "No. El CRM indica que CAS-1043 está aprobado, pero no informa que el dinero haya sido depositado."
+  },
+  {
+    "consulta": "¿Se conoce el motivo por el que no ha llegado el reembolso?",
+    "referencia": "No. La información entregada no indica la causa de la demora del reembolso."
+  },
+  {
+    "consulta": "¿Cuál es la fecha exacta en que se abonará el reembolso?",
+    "referencia": "No se dispone de una fecha exacta de abono. El plazo de POL-07 ya fue superado; corresponde escalar según POL-12."
+  },
+  {
+    "consulta": "¿Se conoce el monto del reembolso aprobado?",
+    "referencia": "No. La información del CRM no incluye el monto del reembolso."
+  },
+  {
+    "consulta": "¿Qué puedo decirle al cliente sobre su reembolso sin prometer una fecha no confirmada?",
+    "referencia": "Su reembolso CAS-1043 está aprobado desde hace 13 días hábiles. El plazo máximo de POL-07 es de 10 días hábiles y ya fue superado. Escalaremos el caso a Supervisión y ofreceremos una nueva fecha de contacto dentro de 48 horas, según POL-12."
+  },
+  {
+    "consulta": "Responde al cliente en tres apartados: estado del caso relevante, mensaje listo para decir en máximo tres frases y acción del ejecutivo con políticas aplicadas.",
+    "referencia": "Estado: CAS-1043, reembolso aprobado hace 13 días hábiles, con plazo máximo de 10 días hábiles superado según POL-07. Mensaje: Su reembolso está aprobado, pero ya superó el plazo máximo de 10 días hábiles. Escalaremos su caso a Supervisión y le ofreceremos una nueva fecha de contacto dentro de 48 horas. Acción: escalar CAS-1043 a Supervisión y ofrecer nueva fecha de contacto dentro de 48 horas, según POL-12; el vencimiento se establece con POL-07."
+  }
+]

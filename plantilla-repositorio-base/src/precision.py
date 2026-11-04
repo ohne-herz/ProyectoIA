@@ -1,3 +1,4 @@
+from pathlib import Path
 from collections import Counter
 from pipeline_limpieza import procesar_texto
 from cliente import consultar_modelo
@@ -50,33 +51,39 @@ def calcular_metricas(texto_referencia, texto_respuesta):
         tokens_referencia, tokens_respuesta
     )
 
-casos = [
-    (
-        "¿Qué es Python?",
-        "Python es un lenguaje de programación interpretado.",
-    ),
+# Bloque 16 - Casos de evaluación de Contact Center
 
-    ("¿Cuándo se creó Python?", "Python fue creado en 1991."),
+BASE = Path(__file__).resolve().parent.parent
+with open(
+    BASE / "casos_contact_center.json",
+    "r",
+    encoding="utf-8"
+) as archivo:
+    casos = json.load(archivo)
 
-    (
-        "¿Qué es una lista en Python?",
-        "Una lista es una colección ordenada y modificable.",
-    ),
-]
+with open(
+    BASE / "contexto_contact_center.txt",
+    "r",
+    encoding="utf-8"
+) as archivo:
+    contexto = archivo.read()
 
 resultados = []
 
-for consulta, referencia in casos:
-    respuesta = consultar_modelo(consulta, system_instruction="Responde en español con una definición breve, en una sola oración de máximo 15 palabras. Sin listas, ejemplos ni introducciones.")
-    
+for caso in casos:
+    consulta = caso["consulta"]
+    referencia = caso["referencia"]
+
+    respuesta = consultar_modelo(
+        consulta,
+        system_instruction=contexto
+    )
+
     metricas = calcular_metricas(referencia, respuesta)
-    
-    print("Consulta:", consulta)
-    print("Respuesta:", respuesta)
-    print("Métricas:", metricas)
-    
+
     resultados.append({
         "consulta": consulta,
+        "referencia": referencia,
         "respuesta": respuesta,
         **metricas,
     })
@@ -109,10 +116,25 @@ def resumir_metricas(resultados):
 print("Promedios")
 print(resumir_metricas(resultados))
     
-peores_casos = sorted(resultados, key=lambda r: r["f1"])
+# Bloque 17 - Selección de muestra cualitativa
 
-for caso in peores_casos[:3]:
-    print(caso["consulta"], caso["f1"])
+peores_casos = sorted(
+    resultados,
+    key=lambda r: r["f1"]
+)
+
+muestra_para_revisar = (
+    peores_casos[:5] + peores_casos[-5:]
+)
+
+print("\nMuestra para revisión manual:")
+
+for caso in muestra_para_revisar:
+    print(
+        caso["consulta"],
+        "F1:",
+        round(caso["f1"], 3)
+    )
     
     
 # referencia = procesar_texto(

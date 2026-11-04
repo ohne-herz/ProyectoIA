@@ -1,9 +1,9 @@
 from unittest.mock import patch, Mock
 import pytest
 from src.consumir_gemini_refactor import enviar_peticion
-from cliente import con_reintento
-from cliente import consultar_modelo
-import cliente
+from src.cliente import con_reintento
+from src.cliente import consultar_modelo
+import src.cliente
 
 def test_enviar_peticion_credencial_invalida():
     """Verifica que una respuesta 401 (credencial inválida) lance ValueError."""
