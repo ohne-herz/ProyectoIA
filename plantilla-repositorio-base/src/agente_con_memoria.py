@@ -35,12 +35,18 @@ import threading
 import sys
 from datetime import datetime, timezone
 import json
+from pathlib import Path
 
 
 #Configuraciones e Inicializaciones
 # La carga del .env debe ocurrir antes de instanciar el modelo
 load_dotenv()
 modelo = ChatGoogleGenerativeAI(model="gemini-3.6-flash")
+
+# Rutas ancladas a la carpeta del script: la traza queda siempre en src/,
+# sin importar desde qué carpeta se ejecute el agente.
+RUTA_TRAZAS = Path(__file__).parent / "trazas_agente.json"
+RUTA_APROBACIONES = Path(__file__).parent / "aprobaciones_agente.jsonl"
 
 #================ Persistencia y análisis de trazabilidad.
 def registrar_traza(session_id: str, entrada: str, resultado: dict) ->None:
@@ -72,7 +78,7 @@ def registrar_traza(session_id: str, entrada: str, resultado: dict) ->None:
         "respuesta_final": resultado.get("output","")
     }
 
-    with open("trazas_agente.json","a",encoding="utf-8") as archivo:
+    with open(RUTA_TRAZAS,"a",encoding="utf-8") as archivo:
         archivo.write(json.dumps(registro, ensure_ascii=False)+"\n") 
 
 
@@ -101,22 +107,22 @@ def esperar_aprobacion(mensaje: str, tiempo_limite_segundos: int=20) -> bool:
     except queue.Empty:
         print("Tiempo de espera agotado. Solicitud denegada por timeout")
         return False
-    
-    #=== Solo en unix
-    # listo, _, _ = select.select([sys.stdin], [], [], tiempo_limite_segundos)
-    #print(mensaje)
-
-    if not listo: 
-        print("Tiempo de espera agotado. Solicitud denegada por timeout")
-        return False
+    # Nota: se usa threading + queue en vez de select.select() (Bloque 23)
+    # porque select sobre stdin no funciona en Windows. Mismo propósito:
+    # espera con límite de tiempo y deniega por defecto (fail-closed).
 
 def registrar_aprobacion(herramienta: str, argumentos: dict, aprobado: bool) -> None:
-    registro_aprobaciones.append({
+    registro = {
         "herramienta": herramienta,
         "argumentos": argumentos,
         "aprobado": aprobado,
-        "fecha_hora": datetime.now().isoformat()
-    })
+        "fecha_hora": datetime.now(timezone.utc).isoformat()
+    }
+    registro_aprobaciones.append(registro)
+    # Persistencia: la lista en memoria se pierde al cerrar el proceso;
+    # el archivo deja evidencia auditable de cada decisión humana.
+    with open(RUTA_APROBACIONES, "a", encoding="utf-8") as archivo:
+        archivo.write(json.dumps(registro, ensure_ascii=False) + "\n")
 
 #=== Esquemas de validación
 class ArgumentosConsultaEnvio(BaseModel): #class ClaseHija(ClasePadre):
@@ -216,10 +222,12 @@ def generar_reembolso(numero_pedido: str, monto: float) -> str:
     )
 
     if not aprobado:
-        return "Reembolso no aprobado por el supervisor o cancelado por timeout"
+        # La marca [APROBACION: ...] deja la decisión humana visible en la traza
+        # (observacion), para que revisar_trazas.py pueda verificarla.
+        return "[APROBACION: rechazado] Reembolso no aprobado por el supervisor o cancelado por timeout"
 
     #Acciones para regresar el dinero (Ej: Una llamada a la pasarela de pagos)
-    return f"Reembolso de {monto} fue generado con éxito para el pedido número {numero_pedido}"
+    return f"[APROBACION: aprobado] Reembolso de {monto} fue generado con éxito para el pedido número {numero_pedido}"
 
 #Listado de herramientas
 # Catálogo registrado tanto en el agente (para que el modelo las conozca)
@@ -352,21 +360,19 @@ if __name__ == "__main__":
 
     # print("Turno 4:", resultado4['output'])
 
-    config_reembolso = {"configurable": {"session_id": "cliente_123"}}
-    resultado_reembolso = agente_con_memoria.invoke(
-        {"entrada":"Mi pedido PED123 llegó roto. Exijo un reembolso de mis 25000 pesos"},
-        config_reembolso
-    )
-    print("Resultado: ", resultado_reembolso)
-    print("Registros de reembolsos almacenados:")
+    # Una entrada por herramienta (cubre riesgo bajo y alto); TODAS se registran
+    # en la traza, incluida la de reembolso (antes no se trazaba).
+    casos = [
+        ("cliente_246", "¿Cuánto me cuesta enviar un paquete de 2.5 kg a 50 km?"),
+        ("cliente_456", "¿Cuál es el estado del envío AR12345, con su historial?"),
+        ("cliente_123", "Mi pedido PED123 llegó roto. Exijo un reembolso de mis 25000 pesos"),
+    ]
+    for session_id, entrada in casos:
+        config = {"configurable": {"session_id": session_id}}
+        resultado = agente_con_memoria.invoke({"entrada": entrada}, config)
+        registrar_traza(session_id=session_id, entrada=entrada, resultado=resultado)
+        print(f"[{session_id}] {resultado['output']}")
+
+    print("Registros de aprobación de esta ejecución:")
     for registro in registro_aprobaciones:
         print(registro)
-
-    # config_costo = {"configurable": {"session_id": "cliente_246"}}
-    # entrada = "¿Cuánto me cuesta enviar un paquete de 2.5 kg a 50 km?"
-    # resultado_costo = agente_con_memoria.invoke(
-    #     {"entrada": entrada},
-    #     config_costo
-    # )
-    # print(resultado_costo["output"])
-    # registrar_traza(session_id=config_costo["configurable"]["session_id"], entrada=entrada, resultado=resultado_costo)
