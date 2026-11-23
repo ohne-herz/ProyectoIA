@@ -1,12 +1,8 @@
 from dotenv import load_dotenv
-from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain_core.prompts import PromptTemplate
-from langchain_core.output_parsers import StrOutputParser
-from langchain_core.runnables import (
-    RunnableBranch,
-    RunnablePassthrough,
-    RunnableLambda,
-)
+from langchain_google_genai import ChatGoogleGenerativeAI #Modelo
+from langchain_core.prompts import PromptTemplate #Plantilla -> Prompt dinámico
+from langchain_core.output_parsers import StrOutputParser #Parsea la respuesta y la transforma en solo textos
+from langchain_core.runnables import (RunnableBranch, RunnablePassthrough, RunnableLambda) #Bifurcaciones/Branches/Ramificaciones
 
 import logging
 
@@ -15,16 +11,14 @@ import logging
 
 logging.basicConfig(
     level=logging.WARNING,
-    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s", #2026-11-04 16:40 [WARNING] main: No se pudo procesar x
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s", #2026-11-04 16:40 [WARNING] main: No se pudo ejecutar x
     datefmt="%Y-%m-%d %H:%M:%S",
     filename="error.log",
-    filemode="a", # agrega al final del archivo la nueva linea
+    filemode="a", #Agrega al final del archivo la nueva línea
     encoding="utf-8",
     force=True
 )
-
 logger = logging.getLogger(__name__)
-
 
 load_dotenv()
 
@@ -32,18 +26,10 @@ modelo = ChatGoogleGenerativeAI(
     model="gemini-3.1-flash-lite"
 )
 
-
-# PLANTILLA DE CLASIFICACIÓN
-
 plantilla_clasificacion = PromptTemplate.from_template(
-    "Clasifica el siguiente mensaje de un cliente de contact center "
-    "en una sola palabra: pregunta, queja o sugerencia. "
-    "Responde solamente con esa palabra.\n\n"
-    "{mensaje}"
+    "Clasifica el siguiente mensaje de soporte en una sola palabra: "
+    "pregunta, queja o sugerencia. Responde solo con esa palabra. \n\n {mensaje}"
 )
-
-
-# PASO DE CLASIFICACIÓN
 
 paso_clasificacion = (
     plantilla_clasificacion
@@ -52,215 +38,89 @@ paso_clasificacion = (
     | (lambda texto: texto.strip().lower())
 )
 
+# mensaje_prueba = "Dame el nombre de tu creador."
 
-# RUTA PREGUNTA
+# clasificacion = paso_clasificacion.invoke(
+#     {"mensaje": mensaje_prueba}
+# )
+
+# print(clasificacion)
 
 cadena_pregunta = (
-    PromptTemplate.from_template(
-        "Responde la siguiente pregunta de un cliente de contact "
-        "center de forma clara y precisa. "
-        "No inventes información que no aparezca en el mensaje.\n\n"
-        "{mensaje}"
-    )
+    PromptTemplate.from_template("Responde esta pregunta técnica con precisión: \n\n {mensaje}")
     | modelo
     | StrOutputParser()
 )
-
-
-# RUTA QUEJA
 
 cadena_queja = (
-    PromptTemplate.from_template(
-        "Responde a la siguiente queja con empatía. "
-        "Primero reconoce el problema del cliente y luego explica "
-        "qué debería hacerse para revisar su caso. "
-        "No inventes información.\n\n"
-        "{mensaje}"
-    )
+    PromptTemplate.from_template("Responde esta queja con empatía, reconociendo el problema antes de ofrecer una solución: \n\n {mensaje}")
     | modelo
     | StrOutputParser()
 )
-
-
-# RUTA SUGERENCIA
 
 cadena_sugerencia = (
-    PromptTemplate.from_template(
-        "Agradece la siguiente sugerencia de un cliente y explica "
-        "que será evaluada por el equipo responsable. "
-        "No prometas que será implementada.\n\n"
-        "{mensaje}"
-    )
+    PromptTemplate.from_template("Agradece esta sugerencia y explica cómo se evaluará dentro del producto: \n\n {mensaje}")
     | modelo
     | StrOutputParser()
 )
 
+#Sintaxis RunnableBranch
+# caminos = RunnableBranch(
+#     (condicion_1, rama_1), #if
+#     (condicion_2, rama_2), #elif
+#     (condicion_3, rama_3), #elif
+#     rama_por_defecto #else
+# ) #Cada condicion debe ser una función; suele ser un lambda
 
-# BIFURCACIÓN
 
+#x = {"clasificacion": "queja", "mensaje": "Mi teléfono no funciona"}
 bifurcacion = RunnableBranch(
-
-    (
-        lambda x: x["clasificacion"] == "queja",
-        cadena_queja
-    ),
-
-    (
-        lambda x: x["clasificacion"] == "sugerencia",
-        cadena_sugerencia
-    ),
-
-    # Ruta por defecto
-    cadena_pregunta
+    (lambda x: x["clasificacion"] == "queja", cadena_queja), #if x["clasificacion"] == "queja": cadena_queja
+    (lambda x: x["clasificacion"] == "sugerencia", cadena_sugerencia), #elif x["clasificacion"] == "sugerencia": cadena_sugerencia
+    cadena_pregunta #else: cadena_pregunta
 )
 
-
-# CADENA CON ENRUTAMIENTO
-
 cadena_con_enrutamiento = (
-
-    RunnablePassthrough.assign(
-        clasificacion=paso_clasificacion
-    )
-
+    RunnablePassthrough.assign(clasificacion=paso_clasificacion) #{"mensaje": "Deberían de tener más agentes disponibles.", "clasificacion":resultado de paso_clasificacion}
     | bifurcacion
 )
 
+#Fallback: cadena de respaldo. Captura las caídas de mi LLM (RateLimitError, 401, APIConnectionError, respuestas vacías)
 
-# RESPUESTA GENÉRICA
-# Se utiliza como fallback si falla cadena_con_enrutamiento
 def fallback_con_log(x):
-    logger.warning("Cadena principal falló. Activando respuesta genericas")
-    return "Gracias por tu mensaje. Un miembro de nuestro equipo revisará tu caso y te responderá pronto."
+    logger.warning("Cadena principal falló. Activando respuesta genérica, Error: %s", x.get("error"))
+    return "Gracias por tu mensaje. Un miembro de nuestro equipo te va a responder pronto."
 
 respuesta_generica = RunnableLambda(
     fallback_con_log
 )
 
-
-# CADENA ROBUSTA
-# Si falla cualquier parte de cadena_con_enrutamiento,
-# ejecuta respuesta_generica.
-
-cadena_robusta = cadena_con_enrutamiento.with_fallbacks(
-    [respuesta_generica]
-)
-
-
-# PROTECCIÓN GENERAL
+cadena_robusta = cadena_con_enrutamiento.with_fallbacks([respuesta_generica], exception_key="error")
 
 def procesar_mensaje_seguro(cadena, mensaje):
-
     try:
-
-        return cadena.invoke(
-            {"mensaje": mensaje}
-        )
-
+        return cadena.invoke({"mensaje": mensaje})
     except Exception as error:
+        logger.error("Error procesando mensaje: %s", error)
+        return "No pudimos procesar tu mensaje en este momento. Intenta de nuevo más tarde"
 
-        # Registra el error que no pudo resolver el fallback
-        logger.error("Error procesando mensaje %s", error)
-
-        return (
-            "No pudimos procesar tu mensaje en este "
-            "momento. Intenta de nuevo más tarde."
-        )
+if __name__ == "__main__": #Solamente ejecuta el siguiente bloque de código si la ejecución es directa del archivo. NO EJECUTES si es import
+    mensaje = "Llevo varios días sin poder entrar a mi cuenta."
+    print(procesar_mensaje_seguro(cadena_robusta, mensaje))
 
 
-# EJECUCIÓN DIRECTA
-
-if __name__ == "__main__":
-
-    mensaje = (
-        "Hola, en mi última factura aparece dos veces "
-        "el mismo cobro y todavía no tengo una respuesta."
-    )
-
-    print(
-        procesar_mensaje_seguro(
-            cadena_robusta,
-            mensaje
-        )
-    )
-
-
-# Entrada inicial:
-#
-# {
-#     "mensaje": "Deberian de tener mas agentes disponibles"
-# }
-#
-#                   |
-#                   v
-#
-# RunnablePassthrough.assign
-#
-# 1. Pasa el mensaje a paso_clasificacion
-#       -> retorna "sugerencia"
-#
-# 2. Fusiona clasificación y mensaje
-#
-# 3. Retorna:
-#
-# {
-#     "mensaje": "Deberian de tener mas agentes disponibles",
-#     "clasificacion": "sugerencia"
-# }
-#
-#                   |
-#                   v
-#
+# Entrada inicial: {"mensaje": "Deberían de tener más agentes disponibles."}
+#                   │
+#                   ▼
+# RunnablePassthrough
+#   1: Pasa el mensaje a paso_clasificacion -> Return "sugerencia"
+#   2: Fusiono clasificacion y mensaje
+#   3: Return {"mensaje": "Deberían de tener más agentes disponibles.", "clasificacion": "sugerencia"}
+#                   │
+#                   ▼
 # bifurcacion (RunnableBranch)
-#
-# IF clasificacion == "queja"
-#       No
-#
-# ELIF clasificacion == "sugerencia"
-#       Si
-#
-#       Entra a cadena_sugerencia
-#
-#       cadena_sugerencia.invoke(
-#           {
-#               "mensaje":
-#               "Deberian de tener mas agentes disponibles",
-#
-#               "clasificacion":
-#               "sugerencia"
-#           }
-#       )
-#
-#       Retorna respuesta final generada.
-#
-#
-# MANEJO DE ERRORES:
-#
-# cadena_con_enrutamiento
-#       |
-#       | falla
-#       v
-#
-# with_fallbacks
-#       |
-#       v
-#
-# respuesta_generica
-#       |
-#       v
-#
-# "Gracias por tu mensaje..."
-#
-#
-# Si incluso cadena_robusta no puede entregar
-# una respuesta:
-#
-# procesar_mensaje_seguro
-#       |
-#       v
-#
-# except Exception
-#       |
-#       +----> logger.error(...)
-#       |
-#       +----> "No pudimos procesar tu mensaje..."
+#   ¿clasificacion == "queja"? NO
+#   ¿clasificacion == "sugerencia" SI
+#       Entra a la cadena_sugerencia
+#       cadena_sugerencia.invoke({"mensaje": "Deberían de tener más agentes disponibles.", "clasificacion": "sugerencia"})
+#       Return respuesta final generada

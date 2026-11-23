@@ -1,12 +1,13 @@
 from dotenv import load_dotenv
 import os
-from langchain_core.output_parsers import StrOutputParser #Parsea respuesta y transforma en solo texto
-from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain_core.prompts import PromptTemplate #Prompt Dinamico
+from langchain_google_genai import ChatGoogleGenerativeAI #Modelo
+from langchain_core.prompts import PromptTemplate #Plantilla -> Prompt dinámico
+from langchain_core.output_parsers import StrOutputParser #Parsea la respuesta y la transforma en solo textos
 from langchain_core.prompts import ChatPromptTemplate #Plantilla que incluye rol del sistema e instrucción
 
 load_dotenv()
-modelo = ChatGoogleGenerativeAI(model="gemini-3.1-flash-lite")
+
+modelo = ChatGoogleGenerativeAI(model="gemini-3.6-flash") #temperature= 0 - 1
 
 plantilla_extraccion = PromptTemplate.from_template("Lee el siguiente texto y devuelve solo sus 3 puntos clave, uno por línea, sin desarrollarlos: \n\n {texto}")
 
@@ -18,7 +19,7 @@ texto_prueba = (
     "prediciendo un token a la vez, basándose en el "
 
     "texto que ya generaron antes. Cada token puede "
-    
+
     "ser una palabra completa, parte de una palabra, "
 
     "o un signo de puntuación. Antes de que el modelo "
@@ -28,45 +29,49 @@ texto_prueba = (
     "divide en tokens, un proceso llamado tokenización."
 )
 
-#puntos = paso_extraccion.invoke(
-#    {"texto": texto_prueba}
-#)
+# puntos = paso_extraccion.invoke(
+#     {"texto": texto_prueba}
+# )
 
-#print(puntos)
+# print(puntos)
 
-plantilla_simplificacion = PromptTemplate.from_template("Reescribe estos puntos en lenguaje natural, sin jerga técnica para alguien sin conocimientos previos \n\n{puntos}")
+plantilla_simplificacion = PromptTemplate.from_template("Reescribe estos puntos en lenguaje simple, sin jerga técnica para alguien sin conocimientos previos: \n\n{puntos}")
 
 paso_simplificacion = plantilla_simplificacion | modelo | StrOutputParser()
 
-#simple = paso_simplificacion.invoke(
-#    {"puntos": puntos}
-#)
-#print(simple)   
+# simple = paso_simplificacion.invoke(
+#     {"puntos": puntos}
+# )
 
-plantilla_formato = PromptTemplate.from_template("Convierte este texto en una lista de viñetas markdown de máximo 3 lineas, sin instroducción \n\n{texto_simple}")
+# print(simple)
+
+plantilla_formato = PromptTemplate.from_template("Convierte este texto en una lista de viñetas markdown de máximo 3 líneas, sin introducción: \n\n{texto_simple}")
 
 paso_formato = plantilla_formato | modelo | StrOutputParser()
 
 # formato = paso_formato.invoke(
-#    {"texto_simple": simple}
+#     {"texto_simple": simple}
 # )
-# print(formato)   
 
+# print(formato)
 
-#Sintaxis lambda -> lambda argumentos: expresión
+#Sintaxis lambda -> lambda argumentos: expresion
 cadena_tres_pasos = (
-    plantilla_extraccion 
+    plantilla_extraccion
     | modelo
     | StrOutputParser()
-    |(lambda puntos: {"puntos": puntos})
+    | (lambda puntos: {"puntos": puntos})
     | plantilla_simplificacion
     | modelo
     | StrOutputParser()
-    |(lambda texto_simple: {"texto_simple": texto_simple})
+    | (lambda simple: {"texto_simple": simple})
     | plantilla_formato
     | modelo
     | StrOutputParser()
 )
 
-respuesta = cadena_tres_pasos.invoke({"texto": texto_prueba})
+respuesta = cadena_tres_pasos.invoke(
+    {"texto": texto_prueba} #El diccionario que corresponde al primer paso/acción inicial
+) 
+
 print(respuesta)
