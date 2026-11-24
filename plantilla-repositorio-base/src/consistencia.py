@@ -1,18 +1,19 @@
 import json
+import os
 import time
-from .prompts.banco import BANCO_DE_PROMPT
-from .consumir_gemini import armar_peticion, enviar_peticion, extraer_texto, parsear_respuesta_json
+from .prompts.banco import BANCO_DE_PROMPTS
+from .consumir_gemini_refactor import armar_peticion, enviar_peticion, extraer_texto, parsear_respuesta_json
 
 registro = {}
 
 try:
     #leer el archivo y guardarlo en una variable
-    for prompt in BANCO_DE_PROMPT:
+    for prompt in BANCO_DE_PROMPTS:
         exitos = 0
         intentos = 3
         for intento in range(intentos):
             url, body = armar_peticion(
-                "gemini-3.5-flash-lite", 
+                os.getenv("GEMINI_MODEL", "gemini-3.1-flash-lite"),  # modelo de docs/decision-arquitectura.md
                 prompt["ejemplo_usuario"], 
                 prompt["system_instruction"], 
                 prompt["response_schema"]
@@ -26,7 +27,7 @@ try:
             except ValueError as error:
                 print(f" intento {intento + 1} falló: {error}")
             time.sleep(1)
-        print(f"{prompt["nombre"]}: {exitos}/{intentos} respuestas válidas")
+        print(f"{prompt['nombre']}: {exitos}/{intentos} respuestas válidas")
         registro[prompt["nombre"]] = {"exitos": exitos, "intentos": intentos}
         #with open ("a")
     #Cuando termine de recorrer los prompts quiero guardar esa info en registro_resultados.json

@@ -90,10 +90,10 @@ if __name__ == "__main__":
     print("F1 Score: ", f1)
 
     casos_evaluacion = [
-        {"pregunta": "", "ids_relavantes": {"ids1", "ids2"}},
-        {"pregunta": "", "ids_relavantes": {"ids1", "ids2"}},
-        {"pregunta": "", "ids_relavantes": {"ids1", "ids2"}},
-        {"pregunta": "", "ids_relavantes": {"ids1", "ids2"}},
+        {"pregunta": "", "ids_relevantes": {"ids1", "ids2"}},
+        {"pregunta": "", "ids_relevantes": {"ids1", "ids2"}},
+        {"pregunta": "", "ids_relevantes": {"ids1", "ids2"}},
+        {"pregunta": "", "ids_relevantes": {"ids1", "ids2"}},
     ]
 
     """

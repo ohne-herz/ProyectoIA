@@ -1,3 +1,4 @@
+import hashlib
 import time #Latencia
 import json #Registrar en jsonl la info
 from contextlib import contextmanager #administrador de contexto: ejecuta antes, durante y después de hacerse una acción
@@ -88,6 +89,9 @@ def registrar_consulta(vectorstore, pregunta: str, k: int = 3) -> dict:
     
     #respuesta tiene usage_metadata -> tokens se gastaron. 
     #respuesta["usage_metadata"]["input_tokens"], respuesta["usage_metadata"]["output_tokens"]
+    contenido = respuesta.content
+    texto_respuesta = contenido if isinstance(contenido, str) else "".join(
+        p.get("text", "") if isinstance(p, dict) else str(p) for p in contenido)
     tokens_reales = dict(respuesta.usage_metadata) if respuesta.usage_metadata else None
 
     costo_usd = None
@@ -106,10 +110,13 @@ def registrar_consulta(vectorstore, pregunta: str, k: int = 3) -> dict:
     #Construir el diccionario con toda la info que obtuvimos
     registro = {
         "timestamp": datetime.now(timezone.utc).isoformat(),
-        "pregunta": pregunta,
+        # Sin contenido crudo (criterio no compensable): solo largo y huella
+        "pregunta_len": len(pregunta),
+        "pregunta_huella": hashlib.sha256(pregunta.encode("utf-8")).hexdigest()[:12],
         "k": k,
         "modelo": MODELO,
-        "respuesta_generada": respuesta.content,
+        "respuesta_len": len(texto_respuesta),
+        "respuesta_huella": hashlib.sha256(texto_respuesta.encode("utf-8")).hexdigest()[:12],
         "citas_disponibles": citas,
         "tiempos_ms": {etapa: round(seg * 1000, 2) for etapa, seg in tiempos.items()},
         "tiempo_total_ms": round(sum(tiempos.values()) * 1000, 2),

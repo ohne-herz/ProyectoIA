@@ -1,0 +1,13 @@
+{
+  "_nota": "CRM simulado. NO se indexa en el vector store: se consulta en cada pregunta porque cambia en cada interaccion (ver docs/decision_personalizacion.md). Montos en pesos chilenos.",
+  "casos": {
+    "CAS-1043": {"cliente": "Maria Gonzalez", "tipo": "Reembolso", "estado": "Aprobado", "dias_habiles_desde_aprobacion": 13, "monto_reclamado": 34990, "ajustes_generados": 0},
+    "CAS-1051": {"cliente": "Maria Gonzalez", "tipo": "Cambio de direccion", "estado": "Cerrado", "ajustes_generados": 0},
+    "CAS-1060": {"cliente": "Pedro Soto", "tipo": "Descuento no aplicado", "estado": "En revision", "precio_cobrado": 59990, "precio_con_descuento": 47990, "monto_reclamado": 10000, "ajustes_generados": 0},
+    "CAS-1072": {"cliente": "Ana Rojas", "tipo": "Devolucion de dinero", "estado": "Abierto", "monto_reclamado": 25990, "ajustes_generados": 0},
+    "CAS-1080": {"cliente": "Luis Perez", "tipo": "Descuento no aplicado", "estado": "Cerrado", "precio_cobrado": 19990, "precio_con_descuento": 15990, "monto_reclamado": 4000, "ajustes_generados": 0},
+    "CAS-1085": {"cliente": "Carla Diaz", "tipo": "Devolucion de dinero", "estado": "En revision", "monto_reclamado": 12990, "ajustes_generados": 1},
+    "CAS-1090": {"cliente": "Jorge Munoz", "tipo": "Reembolso", "estado": "Aprobado", "dias_habiles_desde_aprobacion": 4, "monto_reclamado": 8990, "ajustes_generados": 0}
+  },
+  "plazo_abono_dias_habiles": 10
+}

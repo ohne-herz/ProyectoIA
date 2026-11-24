@@ -1,18 +1,3 @@
 {
-  "Supervisor_Reembolsos": {
-    "exitos": 3,
-    "intentos": 3
-  },
-  "Clasificador_Intencion": {
-    "exitos": 3,
-    "intentos": 3
-  },
-  "Detector_Escalamiento": {
-    "exitos": 3,
-    "intentos": 3
-  },
-  "Resumidor_Caso": {
-    "exitos": 3,
-    "intentos": 3
-  }
+  "_nota": "Banco reescrito para el Gate 2 (politicas propias, prompts para el ejecutivo). Los resultados anteriores (4 prompts, 3/3) correspondian al banco de aseguradora de salud. Re-ejecutar: python -m src.consistencia"
 }
