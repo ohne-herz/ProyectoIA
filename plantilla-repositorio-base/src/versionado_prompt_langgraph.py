@@ -82,6 +82,21 @@ def desplegar(estado:Estado):
     else:
         print("-> despliegue RECHAZADO, se mantiene la versión pasada")
 
+#genera un thread id (id unico para cada solicitud/hilo)
+def nuevo_thread_id(prefijo="despliegue"):
+    return f"{prefijo}-{uuid.uuid4().hex[:8]}"
+
+#Comprobar que exista aprobación pte, reanudar el grafo
+def resolver(app, config, aprobar: bool):
+    snapshot = app.get_state(config) #Obtenemos el proceso en base al ID
+    if not snapshot.next:
+        raise ValueError("Este thread/proceso no tiene ninguna aprobación pendiente")
+
+    #reaune el flujo, estableciendo true o false y enviando el id del thread
+    return app.invoke(Command(resume=aprobar),config=config)
+    #Command(resume true/false): reanudar el flujo
+
+
 if __name__ == "__main__":
     print("--- PARTE A: REGISTRO Y DIFF DE PROMPTS ---")
     registro = RegistroDePrompts()
@@ -106,3 +121,50 @@ if __name__ == "__main__":
     print("\nDiff de cambios:")
     for linea in diff_prompts(v1["texto"], v2["texto"]):
         print(linea)
+
+    print("--- PARTE B: LANG GRAPH ---")
+    #Construimos el proceso
+    grafo = StateGraph(Estado) #Un nuevo flujo de trabajo
+
+    #Creando las estancias de trabajo
+    grafo.add_node("proponer_version", proponer_version) #("nombre_nodo", accion_funcion_a_ejecutar)
+    grafo.add_node("punto_supervision", punto_supervision)
+    grafo.add_node("desplegar", desplegar)
+
+    #Trazando las flechas que van a conectar mis nodos. Les doy una secuencia. START --- END
+    grafo.add_edge(START, "proponer_version")
+    grafo.add_edge("proponer_version", "punto_supervision")
+    grafo.add_edge("punto_supervision", "desplegar")
+    grafo.add_edge("desplegar", END)
+
+    #Valida que no haya caminos rotos y hace del grafo un objeto ejecutable (invoke)
+    app = grafo.compile(checkpointer=InMemorySaver())
+    #checkpointer: Esteblezco un punto de guardado para el momento en el que yo interrumpo el 
+    # proceso. Guardo una "foto" del estado actual, guardar en Memoria la información del estado 
+    # actual de mi proceso. InMemorySaver() = Guardando en Memoria RAM. Producción: 
+    # Sqllite o Postgres, MySql. Genera una fila nueva con estado y el id (del proceso)
+
+    #Quiero ejecutar un flujo. Flujo debe de tener un UUID
+    config = {"configurable": {"thread_id": nuevo_thread_id()}}#Creando el numero unico (hilo) para la solicitud
+    #Langgraph me exige que sea el diccionario con esa misma estructura
+    resultado = app.invoke({"version_nueva": v2["huella"],"aprobado": False},config=config)
+
+    print("Estado tras la primera corrida",resultado)
+    snapshot = app.get_state(config)
+    print("siguiente nodo pendiente: ", snapshot.next)
+    #punto_supervision
+    print("detalle de interrupcion: ", snapshot.interrupts[0].value)
+
+    print("\nreanudando con aprobación humana")
+    #Reanudando mi flujo, aprobando el cambio
+    resultado_aprobado = resolver(app, config, True)
+    print("estado final:", resultado_aprobado)
+
+    #RECHAZO
+    #NUEVO thread_id para un nuevo proceso
+    config2 = {"configurable": {"thread_id": nuevo_thread_id()}}
+    app.invoke({"version_nueva": "v3-prueba", "aprobado": False}, config=config2)    
+
+    print("\nreanudando con rechazo humana")
+    resultado_rechazo = resolver(app, config2, False)
+    print("estado final:", resultado_rechazo)

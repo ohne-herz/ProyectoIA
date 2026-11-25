@@ -3,7 +3,7 @@ import pytest
 from src.consumir_gemini_refactor import enviar_peticion
 from src.cliente import con_reintento
 from src.cliente import consultar_modelo
-import src.cliente
+import src.cliente as cliente
 
 def test_enviar_peticion_credencial_invalida():
     """Verifica que una respuesta 401 (credencial inválida) lance ValueError."""
@@ -59,7 +59,7 @@ def test_consultar_modelo_convierte_error():
     """Verifica que consultar_modelo convierta un TimeoutError en RuntimeError."""
     error_simulado = TimeoutError("simulado")
 
-    with patch("cliente.con_reintento", side_effect=error_simulado):
+    with patch("src.cliente.con_reintento", side_effect=error_simulado):
         with pytest.raises(RuntimeError):
             consultar_modelo("pregunta de prueba")
 

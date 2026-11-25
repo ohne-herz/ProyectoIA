@@ -1,0 +1,201 @@
+{
+  "fecha": "2026-11-24",
+  "modo": "real",
+  "n_casos": 10,
+  "por_k": {
+    "1": {
+      "precision": 1.0,
+      "recall": 0.944,
+      "f1": 0.963,
+      "detalle": [
+        {
+          "pregunta": "¿En cuántos días hábiles se abona un reembolso aprobado?",
+          "recuperados": [
+            "POL-07"
+          ],
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        {
+          "pregunta": "El reembolso aprobado lleva más días que el plazo, ¿qué hago?",
+          "recuperados": [
+            "POL-07"
+          ],
+          "precision": 1.0,
+          "recall": 0.5
+        },
+        {
+          "pregunta": "¿Cuándo debo escalar un caso a Supervisión?",
+          "recuperados": [
+            "POL-12"
+          ],
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        {
+          "pregunta": "Me cobraron el precio normal de un producto que estaba en oferta",
+          "recuperados": [
+            "POL-15"
+          ],
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        {
+          "pregunta": "¿Cómo se calcula el ajuste por un descuento promocional no aplicado?",
+          "recuperados": [
+            "POL-15"
+          ],
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        {
+          "pregunta": "Devolví el producto y quiero que me devuelvan el dinero",
+          "recuperados": [
+            "POL-16"
+          ],
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        {
+          "pregunta": "¿Puedo confirmarle al cliente el ajuste antes de que lo apruebe el supervisor?",
+          "recuperados": [
+            "POL-20"
+          ],
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        {
+          "pregunta": "¿Se puede generar un segundo ajuste económico en el mismo caso?",
+          "recuperados": [
+            "POL-20"
+          ],
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        {
+          "pregunta": "El cliente insiste en un ajuste sobre un caso que ya está cerrado",
+          "recuperados": [
+            "POL-21"
+          ],
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        {
+          "pregunta": "¿Qué horario tiene la sucursal de Concepción?",
+          "recuperados": [
+            "POL-07"
+          ],
+          "precision": 0.0,
+          "recall": null
+        }
+      ]
+    },
+    "3": {
+      "precision": 0.333,
+      "recall": 0.944,
+      "f1": 0.489,
+      "detalle": [
+        {
+          "pregunta": "¿En cuántos días hábiles se abona un reembolso aprobado?",
+          "recuperados": [
+            "POL-07",
+            "POL-16",
+            "POL-20"
+          ],
+          "precision": 0.33,
+          "recall": 1.0
+        },
+        {
+          "pregunta": "El reembolso aprobado lleva más días que el plazo, ¿qué hago?",
+          "recuperados": [
+            "POL-07",
+            "POL-16",
+            "POL-20"
+          ],
+          "precision": 0.33,
+          "recall": 0.5
+        },
+        {
+          "pregunta": "¿Cuándo debo escalar un caso a Supervisión?",
+          "recuperados": [
+            "POL-12",
+            "POL-20",
+            "POL-21"
+          ],
+          "precision": 0.33,
+          "recall": 1.0
+        },
+        {
+          "pregunta": "Me cobraron el precio normal de un producto que estaba en oferta",
+          "recuperados": [
+            "POL-15",
+            "POL-20",
+            "POL-16"
+          ],
+          "precision": 0.33,
+          "recall": 1.0
+        },
+        {
+          "pregunta": "¿Cómo se calcula el ajuste por un descuento promocional no aplicado?",
+          "recuperados": [
+            "POL-15",
+            "POL-20",
+            "POL-16"
+          ],
+          "precision": 0.33,
+          "recall": 1.0
+        },
+        {
+          "pregunta": "Devolví el producto y quiero que me devuelvan el dinero",
+          "recuperados": [
+            "POL-16",
+            "POL-07",
+            "POL-20"
+          ],
+          "precision": 0.33,
+          "recall": 1.0
+        },
+        {
+          "pregunta": "¿Puedo confirmarle al cliente el ajuste antes de que lo apruebe el supervisor?",
+          "recuperados": [
+            "POL-20",
+            "POL-15",
+            "POL-12"
+          ],
+          "precision": 0.33,
+          "recall": 1.0
+        },
+        {
+          "pregunta": "¿Se puede generar un segundo ajuste económico en el mismo caso?",
+          "recuperados": [
+            "POL-20",
+            "POL-21",
+            "POL-15"
+          ],
+          "precision": 0.33,
+          "recall": 1.0
+        },
+        {
+          "pregunta": "El cliente insiste en un ajuste sobre un caso que ya está cerrado",
+          "recuperados": [
+            "POL-21",
+            "POL-20",
+            "POL-15"
+          ],
+          "precision": 0.33,
+          "recall": 1.0
+        },
+        {
+          "pregunta": "¿Qué horario tiene la sucursal de Concepción?",
+          "recuperados": [
+            "POL-07",
+            "POL-12",
+            "POL-21"
+          ],
+          "precision": 0.0,
+          "recall": null
+        }
+      ]
+    }
+  }
+}

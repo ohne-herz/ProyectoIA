@@ -88,8 +88,9 @@ BANCO_DE_PROMPTS = [
             "</contexto>\n"
             "<crm>\n"
             "caso_id: CAS-1060 | tipo: Descuento no aplicado | estado: En revision | ajuste_calculado: 10000 "
-            "(POL-15, diferencia 12000, tope monto reclamado 10000) | estado_ajuste: PENDIENTE de aprobacion "
-            "de supervisor (POL-20)\n"
+            "(POL-15, diferencia 12000, tope monto reclamado 10000) | solicitud_de_ajuste: NO ingresada aun, "
+            "el ejecutivo debe generarla con la herramienta de solicitud de ajuste | aprobacion: quedara "
+            "PENDIENTE de supervisor (POL-20), no confirmar el ajuste al cliente\n"
             "</crm>\n"
             "Pregunta del ejecutivo: ¿Que le respondo al cliente?"
         ),

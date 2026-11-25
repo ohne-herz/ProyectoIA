@@ -309,8 +309,12 @@ def formatear_crm(caso: dict | None) -> str:
     lineas = " | ".join(f"{k}: {v}" for k, v in caso.items() if k not in excluir)
     a = caso["ajuste"]
     if a["procede"]:
+        # Redaccion explicita: en la corrida real el modelo interpreto "PENDIENTE" como
+        # "solicitud ya ingresada". La solicitud aun no existe: la genera el ejecutivo (POL-15).
         lineas += (f" | ajuste_calculado: {a['monto']} ({a['politica']}, {a['motivo']}) "
-                   f"| estado_ajuste: PENDIENTE de aprobacion de supervisor (POL-20)")
+                   f"| solicitud_de_ajuste: NO ingresada aun, el ejecutivo debe generarla con la "
+                   f"herramienta de solicitud de ajuste | aprobacion: quedara PENDIENTE de supervisor "
+                   f"(POL-20), no confirmar el ajuste al cliente")
     elif a["politica"]:
         lineas += f" | ajuste: no procede ({a['politica']}: {a['motivo']})"
     return lineas
@@ -369,6 +373,12 @@ def texto_de_respuesta(contenido) -> str:
     if isinstance(contenido, str):
         return contenido
     return "".join(p.get("text", "") if isinstance(p, dict) else str(p) for p in contenido)
+
+
+def extraer_citas(texto: str) -> set[int]:
+    """Reconoce [1] y tambien citas agrupadas como [1, 2] (formato que usa Gemini)."""
+    return {int(n) for grupo in re.findall(r"\[(\d+(?:\s*,\s*\d+)*)\]", texto)
+            for n in re.split(r"\s*,\s*", grupo)}
 
 
 def calcular_costo(tokens_entrada: int, tokens_salida: int) -> float:
@@ -451,7 +461,7 @@ def responder(pregunta: str, vectorstore, modelo, registro_prompts: RegistroDePr
 
         # Citación garantizada: las fuentes salen de los documentos usados, no del texto
         # del modelo. Si el modelo citó [n], se marcan como citadas por el modelo.
-        citadas = {int(n) for n in re.findall(r"\[(\d+)\]", texto)}
+        citadas = extraer_citas(texto)
         fuentes = [{"n": i, "fuente": d.metadata["fuente"], "politica": d.metadata["politica"],
                     "citada_por_modelo": i in citadas} for i, d in enumerate(limpios, 1)]
         if not citadas:

@@ -1,3 +1,9 @@
-# Registra aquí las dependencias de tu proyecto a medida que las instales.
-# Ejemplo (descomenta y ajusta según lo que uses):
-# requests
+# Dependencias directas del servicio RAG (Gate 2). Versiones probadas con Python 3.11-3.14.
+# El inventario completo del entorno (pip freeze) esta en src/requirements.txt.
+langchain-core==1.7.4
+langchain-chroma==1.1.0
+langchain-text-splitters==1.1.3
+langchain-google-genai==4.4.2
+langgraph==1.2.19
+python-dotenv==1.2.4
+pytest==9.2.0

@@ -75,3 +75,30 @@ Se descartó el modelo **gemini-3.6-flash** porque, con la misma calidad de resp
 También se descartó **gemini-3.8-flash** porque tuvo la mayor latencia (18,19 s en su única ejecución exitosa), dos ejecuciones superaron el tiempo de espera de 30 s y su costo es ≈ 12x el de flash-lite, sin una mejora de calidad que lo justifique.
 
 **Alternativa a evaluar en una siguiente etapa:** un enrutamiento híbrido, con flash-lite por defecto y un modelo Flash solo para consultas complejas (varios casos cruzados o políticas ambiguas). Así se combina el bajo costo de flash-lite con la mayor completitud de los modelos Flash cuando realmente aporta valor.
+
+---
+
+# Decisiones de arquitectura del Gate 2 (servicio RAG)
+
+## D-01. Cómo se llama al modelo: cliente del Gate 1 o cliente de LangChain
+
+En mi ficha escribí que la miniaplicación del Gate 1 pasaría a ser una pieza del servicio. Al integrar el servicio, evalué dos caminos:
+
+| Opción | A favor | En contra |
+|---|---|---|
+| A. Reutilizar mi cliente HTTP del Gate 1 (`cliente.py` + `consumir_gemini_refactor.py`) | Reutiliza código propio ya probado (reintentos, costo) | No se integra con la cadena de LangChain ni con LangGraph; habría que adaptar mensajes, `usage_metadata` y callbacks; envía la clave como parámetro de URL (`?key=`), que puede quedar en logs intermedios |
+| **B. `ChatGoogleGenerativeAI` de LangChain (elegida)** | Compatible con retriever, callbacks y LangGraph; entrega `usage_metadata` estándar; la clave no viaja en la URL | No reutiliza el código del Gate 1, solo sus decisiones |
+
+**Decisión:** opción B. Lo que se conserva del Gate 1 son sus decisiones de diseño, no el archivo: reintentos acotados (`max_retries=2`), `timeout=60` (aprendizaje de los 429/503 de la comparación de modelos), cálculo de costo por tokens con tarifas parametrizadas y el modelo `gemini-3.1-flash-lite`. El cliente del Gate 1 se mantiene para `consistencia.py` (evaluación del banco de prompts con salida estructurada).
+
+## D-02. Reglas de montos en código, no en el modelo
+
+Las políticas POL-15, POL-16, POL-20 y POL-21 definen montos, topes y elegibilidad. Se calculan en `evaluar_ajuste()` y llegan al modelo ya resueltas; el prompt le prohíbe recalcularlas. **Por qué:** un monto de dinero debe ser determinista, auditable y testeable (`test_reglas_de_ajuste_deterministas`). El modelo redacta; no decide cuánto se devuelve.
+
+## D-03. CRM consultado, no indexado
+
+El estado del caso cambia en cada interacción; indexarlo en Chroma dejaría datos viejos. Se consulta en cada pregunta y su tipo y política se usan para enriquecer la búsqueda en la base de conocimiento.
+
+## D-04. Supervisión humana síncrona (alcance Gate 2)
+
+Escalamientos (POL-12), ajustes económicos (POL-20) y cambios de prompt pasan por un grafo de LangGraph con `interrupt()`/`Command`. En esta etapa el checkpointer es en memoria: la aprobación ocurre en la misma ejecución. **Trade-off aceptado:** simple y demostrable ahora; en Gate 3 se reemplaza por un checkpointer persistente y un endpoint de aprobación (riesgos R-05, R-07 y R-11 de `docs/matriz_riesgos.md`).

@@ -28,3 +28,12 @@ Como tenía dudas con la pregunta del formato, corrí el método otra vez cambi�
 - **Estado del CRM:** no lo voy a indexar, porque cambia en cada interacción. Lo correcto es consultarlo por API en cada pregunta.
 - **Para evaluar:** tengo 20 casos de prueba, pero a ninguno le marqué todavía los `ids_relevantes` que necesito para medir con `evaluador_rag.py`. A 5 minutos por caso, son unas 1,7 horas.
 - **Pendiente:** revisar 20 respuestas reales para confirmar la pregunta del formato. Si 3 o más fallan, la cambio a True.
+
+## 5. Estado de ejecución (Gate 2)
+
+| Pendiente declarado en la sección 4 | Estado |
+|---|---|
+| Indexar las políticas POL-07 y POL-12 | Hecho: `src/corpus/politicas_atencion.md`, con 6 políticas (POL-07, 12, 15, 16, 20, 21) y 1 chunk por política con id estable. Las reglas de montos (POL-15/16/20/21) se calculan en código, no en el modelo |
+| Consultar el estado del CRM por API en vez de indexarlo | Hecho: `consultar_crm()` en `src/servicio_rag.py`, sobre `src/corpus/crm_simulado.json` |
+| Marcar `ids_relevantes` para evaluar | Hecho: 10 casos en `src/evaluar_corpus.py`, resultados en `docs/evaluacion_recuperacion.md` |
+| Revisar 20 respuestas reales para confirmar la pregunta de formato | **Pendiente**: requiere corridas con Gemini real. Aunque cambiara a True, RAG sigue ganando (5 vs 3), como muestra la sección 3 |

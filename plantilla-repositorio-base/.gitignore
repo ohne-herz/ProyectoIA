@@ -20,3 +20,9 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Artefactos del servicio RAG (se regeneran solos)
+indice_gate2/
+indice_gate2_simulado/
+logs/
+.pytest_cache/
